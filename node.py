@@ -21,6 +21,8 @@ class Block:
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S") #string
         self.data = data
         self.nonce = nonce
+    def __str__(self):
+        return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
 
     def hash_block(self) -> str:
         data_string = f"{self.data.sender}{self.data.recipient}{self.data.amount}{self.data.timestamp}"
@@ -28,7 +30,19 @@ class Block:
 
 class Blockchain:
     def __init__(self):
-        self.chain = []
+        self.chain = [];
+    def __getitem__(self, index):
+        return self.chain[index]
+    def __str__(self):
+        chain_data :str = ""
+        block_index: int = -1
+        for block in self.chain:
+            block_index += 1
+            chain_data += f"INDEX: {block_index} "
+            chain_data += str(block)
+            chain_data += "\n"
+        return chain_data
+
 
     def create_genesis_block(self):
         first_hash = "xite"
@@ -67,7 +81,7 @@ class User:
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
         message = f"{self.name} gave {recipient.name} {amount} $XITE"
         transaction_data = Data(self, recipient, amount, message)
-        transaction_hash = hashlib.sha256(message.encode).hexdigest()
+        transaction_hash = hashlib.sha256(message.encode()).hexdigest()
         new_block = Block(transaction_hash, transaction_data)
         self.blockchain.add_block(new_block)
         return transaction_data
@@ -75,8 +89,12 @@ class User:
 
 test_blockchain = Blockchain()
 test_blockchain.create_genesis_block()
+print(test_blockchain[0])
 
 Jason = User("Jason", 200, test_blockchain)
 Mones = User("Mones", 825, test_blockchain)
 
 print(Jason.transaction(Mones, 100))
+print(Jason.amount)
+
+print(test_blockchain)
