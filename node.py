@@ -15,38 +15,48 @@ class Data:
         return self.message
 
 class Block:
-    def __init__(self, hash: str, data: Data):
-        self.hash = self.hash_block()
+    def __init__(self, hash: str, data: Data, nonce: int = 0):
+        # self.hash = self.hash_block()
+        self.hash = hash
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S") #string
         self.data = data
+        self.nonce = nonce
 
-    def hash_block(self):
+    def hash_block(self) -> str:
         data_string = f"{self.data.sender}{self.data.recipient}{self.data.amount}{self.data.timestamp}"
-        return hashlib.sha256(self.data.encode()).hexdigest()
+        return hashlib.sha256(data_string.encode()).hexdigest()
 
 class Blockchain:
-    def __init__(self, block: 'Block'):
+    def __init__(self):
         self.chain = []
 
-    def proof_of_work(self, block):
-        proof = 0
-        while self.valid_proof(block, proof) is False:
-            proof +=1
-        return proof
-    
-    def valid_proof(self, block, proof):
-        guess = f'{block.data}{proof}'.encode()
+    def create_genesis_block(self):
+        first_hash = "xite"
+        first_nonce = 32
+        data = Data(None, None, 0, "Genesis Block")
+        genesis_block = Block(first_hash, data, first_nonce)
+        self.chain.append(genesis_block)
+
+    def proof_of_work(self, block) -> int:
+        while self.valid_proof(block, block.nonce) is False:
+            block.nonce +=1
+        return block.nonce
+
+    def valid_proof(self, block: 'Block', nonce: int) -> bool:
+        guess = f'{block.hash_block()}{nonce}'.encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return guess_hash[:4] == "0000"
-    
+
     def add_block(self, block):
-        proof = self.proof_of_work(block)
-        block.proof = self.chain.append(block)
+        nonce = self.proof_of_work(block)
+        block.nonce = nonce
+        self.chain.append(block)
 
 class User: 
-    def __init__(self, name: str, amount: int):
+    def __init__(self, name: str, amount: int, blockchain: 'Blockchain'):
         self.name = name
         self.amount = amount 
+        self.blockchain = blockchain
         
     def transaction(self, recipient: 'User', amount: int) -> Data:
         if self.amount < amount: 
@@ -57,11 +67,16 @@ class User:
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
         message = f"{self.name} gave {recipient.name} {amount} $XITE"
         transaction_data = Data(self, recipient, amount, message)
-        new_block = Block()
+        transaction_hash = hashlib.sha256(message.encode).hexdigest()
+        new_block = Block(transaction_hash, transaction_data)
+        self.blockchain.add_block(new_block)
         return transaction_data
     
 
-Jason = User("Jason", 200)
-Mones = User("Mones", 825)
+test_blockchain = Blockchain()
+test_blockchain.create_genesis_block()
+
+Jason = User("Jason", 200, test_blockchain)
+Mones = User("Mones", 825, test_blockchain)
 
 print(Jason.transaction(Mones, 100))
