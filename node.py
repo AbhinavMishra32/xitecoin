@@ -1,26 +1,31 @@
 from datetime import datetime
 import hashlib
+from multiprocessing import pool
 
 # XiteCoin ($XITE), 2024
 # Created by Abhinav Mishra
 
+
 class Data:
-    def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
+    def __init__(self, sender: "User", recipient: "User", amount: int, message: str):
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
         self.message = message
+
     def __str__(self):
         return self.message
+
 
 class Block:
     def __init__(self, hash: str, data: Data, nonce: int = 0):
         # self.hash = self.hash_block()
         self.hash = hash
-        self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S") #string
+        self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         self.data = data
         self.nonce = nonce
+
     def __str__(self):
         return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
 
@@ -28,13 +33,16 @@ class Block:
         data_string = f"{self.data.sender}{self.data.recipient}{self.data.amount}{self.data.timestamp}"
         return hashlib.sha256(data_string.encode()).hexdigest()
 
+
 class Blockchain:
     def __init__(self):
-        self.chain = [];
+        self.chain = []
+
     def __getitem__(self, index):
         return self.chain[index]
+
     def __str__(self):
-        chain_data :str = ""
+        chain_data: str = ""
         block_index: int = -1
         for block in self.chain:
             block_index += 1
@@ -42,7 +50,6 @@ class Blockchain:
             chain_data += str(block)
             chain_data += "\n"
         return chain_data
-
 
     def create_genesis_block(self):
         first_hash = "xite"
@@ -52,28 +59,37 @@ class Blockchain:
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
-        while self.valid_proof(block, block.nonce) is False:
-            block.nonce +=1
+        while self.valid_proof(block, block.nonce)[0] is False:
+            # while self.valid_proof(block, block.nonce) is False:
+            block.nonce += 1
+            print(self.valid_proof(block, block.nonce)[1], end="\r")
         return block.nonce
 
-    def valid_proof(self, block: 'Block', nonce: int) -> bool:
-        guess = f'{block.hash_block()}{nonce}'.encode()
+    def valid_proof(self, block: "Block", nonce: int) -> list:
+        guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return guess_hash[:4] == "0000"
+        return [guess_hash[:4] == "00000", guess_hash]
+        # return guess_hash[:4] == "00000"
 
     def add_block(self, block):
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
 
-class User: 
-    def __init__(self, name: str, amount: int, blockchain: 'Blockchain'):
+
+class User:
+    def __init__(self, name: str, amount: int, blockchain: "Blockchain"):
         self.name = name
-        self.amount = amount 
+        self.amount = amount
         self.blockchain = blockchain
-        
-    def transaction(self, recipient: 'User', amount: int) -> Data:
-        if self.amount < amount: 
+
+
+    #public key: Sign(Message, private key) = signature
+    #private key: Verify(Message, public key, signature) = True/False
+    def
+
+    def transaction(self, recipient: "User", amount: int) -> Data:
+        if self.amount < amount:
             print("Insufficient balance")
             return
         recipient.amount += amount
@@ -85,16 +101,17 @@ class User:
         new_block = Block(transaction_hash, transaction_data)
         self.blockchain.add_block(new_block)
         return transaction_data
-    
+
 
 test_blockchain = Blockchain()
 test_blockchain.create_genesis_block()
-print(test_blockchain[0])
+# print(test_blockchain[0])
 
 Jason = User("Jason", 200, test_blockchain)
 Mones = User("Mones", 825, test_blockchain)
 
 print(Jason.transaction(Mones, 100))
 print(Jason.amount)
+print(Mones.amount)
 
 print(test_blockchain)
