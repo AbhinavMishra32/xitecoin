@@ -17,10 +17,8 @@ from datetime import datetime
 import hashlib
 from multiprocessing import pool
 import rsa
-
 # from cryptography.hazmat.primitives.asymmetric import rsa
 # from cryptography.hazmat.primitives import serialization
-
 
 class Data:
     def __init__(self, sender: "User", recipient: "User", amount: int, message: str):
@@ -70,7 +68,7 @@ class Blockchain:
     def create_genesis_block(self):
         first_hash = "xite"
         first_nonce = 32
-        data = Data(None, None, 0, "Genesis Block")
+        data = Data(None, None, 0, "Genesis Block") # type: ignore
         genesis_block = Block(first_hash, data, first_nonce)
         self.chain.append(genesis_block)
 
@@ -94,22 +92,15 @@ class Blockchain:
 
 
 class User:
-    def __init__(
-        self,
-        name: str,
-        amount: int,
-        blockchain: "Blockchain",
-        public_key: str = None,
-        private_key: str = None,
-    ):
+    def __init__(self, name: str, amount: int, blockchain: "Blockchain", public_key: str = None, private_key: str = None):
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
         (self.public_key, self.private_key) = rsa.newkeys(512)
 
-    # public key: Sign(Message, private key) = signature
-    # private key: Verify(Message, public key, signature) = True/False
-    def sign(self, message: str, data: "Data") -> str:
+    #public key: Sign(Message, private key) = signature
+    #private key: Verify(Message, public key, signature) = True/False
+    def sign(self, message: str, data: 'Data') -> str:
         message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
         signature = rsa.sign(message.encode(), self.private_key, "SHA-256")
         return signature
@@ -117,7 +108,7 @@ class User:
     def transaction(self, recipient: "User", amount: int) -> Data:
         if self.amount < amount:
             print("Insufficient balance")
-            return
+            return # type: ignore
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
