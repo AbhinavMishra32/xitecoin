@@ -1,9 +1,25 @@
+# XiteCoin ($XITE), 2024
+# Created by Abhinav Mishra
+
+# This file contains the code for the node of the XiteCoin blockchain network.
+# The node is responsible for creating and verifying transactions, and mining
+# blocks. The node also contains the blockchain, which is a list of blocks.
+
+# The node is also responsible for creating and storing the public and private
+# keys of the users. The public key is used to verify the signature of the
+# transaction, and the private key is used to sign the transaction.
+
+# The node also contains the code for the wallet, which is used to store the
+# public and private keys of the user. The wallet is also used to create
+# transactions, and to sign them.
+
 from datetime import datetime
 import hashlib
 from multiprocessing import pool
+import rsa
 
-# XiteCoin ($XITE), 2024
-# Created by Abhinav Mishra
+# from cryptography.hazmat.primitives.asymmetric import rsa
+# from cryptography.hazmat.primitives import serialization
 
 
 class Data:
@@ -78,15 +94,25 @@ class Blockchain:
 
 
 class User:
-    def __init__(self, name: str, amount: int, blockchain: "Blockchain"):
+    def __init__(
+        self,
+        name: str,
+        amount: int,
+        blockchain: "Blockchain",
+        public_key: str = None,
+        private_key: str = None,
+    ):
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
+        (self.public_key, self.private_key) = rsa.newkeys(512)
 
-
-    #public key: Sign(Message, private key) = signature
-    #private key: Verify(Message, public key, signature) = True/False
-    def
+    # public key: Sign(Message, private key) = signature
+    # private key: Verify(Message, public key, signature) = True/False
+    def sign(self, message: str, data: "Data") -> str:
+        message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
+        signature = rsa.sign(message.encode(), self.private_key, "SHA-256")
+        return signature
 
     def transaction(self, recipient: "User", amount: int) -> Data:
         if self.amount < amount:
