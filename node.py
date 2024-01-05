@@ -100,6 +100,7 @@ class User:
 
     #public key: Sign(Message, private key) = signature
     #private key: Verify(Message, public key, signature) = True/False
+    #TODO: Fix the signature verification, and implement correct public and private key feature.
     def sign(self, message: str, data: 'Data') -> str:
         message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
         signature = rsa.sign(message.encode(), self.private_key, "SHA-256")
@@ -132,3 +133,7 @@ print(Jason.amount)
 print(Mones.amount)
 
 print(test_blockchain)
+
+
+#TODO: implement server based or peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
+#TODO: implement a wallet class to store the public and private keys of the user.
