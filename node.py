@@ -131,8 +131,8 @@ class User:
     def sign_msg(self, message: str) ->bytes:
         return rsa.sign(message.encode(), self.private_key, "SHA-256")
 
-# class Transaction:
-#     def __init__(self, user:'User'):
+class Transaction:
+    def __init__(self, user:'User'):
 
 
 
