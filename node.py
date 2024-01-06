@@ -88,30 +88,26 @@ class Blockchain:
     def add_block(self, block):
         nonce = self.proof_of_work(block)
         block.nonce = nonce
-
-
-
         self.chain.append(block)
 
-
-    def verify_block(self, block: "Block"):                #each transaction has a different public and private key
-        if rsa.verify(block.data.message.encode(), block.data.sender.signature, "SHA-256") == "SHA-256":
-            pass
+    def verify_block(self, block: "Block") -> bool:
+        signature = block.data.sender.sign(block.data.message)  # Generate the signature using the sender's private key
+        if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":  # Pass the signature as bytes and the sender's public key
+            return True
+        return False
 
 
 class User:
-    def __init__(self, name: str, amount: int, blockchain: "Blockchain", public_key: str = None, private_key: str = None):
+    def __init__(self, name: str, amount: int, blockchain: "Blockchain", public_key: str = None, private_key: str = None): # type: ignore
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
-        self.public_key, self.private_key = rsa.newkeys(512)
-
+        self.public_key, self._private_key = rsa.newkeys(512)
         #public key: Sign(Message, private key) = signature
         #private key: Verify(Message, public key, signature) = True/False
         #TODO: Fix the signature verification, and implement correct public and private key feature.    
     def sign(self, message: str) -> bytes:
-        # message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
-        signature = rsa.sign(message.encode(), self.private_key, "SHA-256")
+        signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
         return signature
 
     def transaction(self, recipient: "User", amount: int) -> Data:
@@ -123,17 +119,14 @@ class User:
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
         self.message = f"{self.name} gave {recipient.name} {amount} $XITE" #this message has to be signed
         transaction_data = Data(self, recipient, amount, self.message)
-        signature = self.sign(self.message)
         transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
         new_block = Block(transaction_hash, transaction_data)
-        self.blockchain.add_block(new_block)
+        if self.blockchain.verify_block(new_block):
+            self.blockchain.add_block(new_block)
+            print("Transaction was verified!")
+        else: 
+            print("Transaction was not able to be verified!")
         return transaction_data
-    def sign_msg(self, message: str) ->bytes:
-        return rsa.sign(message.encode(), self.private_key, "SHA-256")
-
-class Transaction:
-    def __init__(self, user:'User'):
-
 
 
 
@@ -143,9 +136,6 @@ test_blockchain.create_genesis_block()
 
 Jason = User("Jason", 200, test_blockchain)
 Mones = User("Mones", 825, test_blockchain)
-
-jason_wallet = Wallet(Jason)
-# print(jason_wallet)
 
 
 print(Jason.transaction(Mones, 100))
