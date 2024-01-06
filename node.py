@@ -70,17 +70,19 @@ class Blockchain:
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
+        iteration = 0
         while self.valid_proof(block, block.nonce)[0] is False:
             # while self.valid_proof(block, block.nonce) is False:
+            iteration += 1
             block.nonce += 1
-            print(self.valid_proof(block, block.nonce)[1], end="\r")
+            print((self.valid_proof(block, block.nonce)[1] + " ITERATION: " + str(iteration)), end="\r")
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        difficulity = "0000"
+        difficulity = "00000"
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return [guess_hash[:4] == difficulity, guess_hash]
+        return [guess_hash[:int(len(difficulity))] == difficulity, guess_hash]
 
     def add_block(self, block):
         nonce = self.proof_of_work(block)
@@ -96,7 +98,7 @@ class Blockchain:
 
 
 class User:
-    def __init__(self, name: str, amount: int, blockchain: "Blockchain", public_key: str = None, private_key: str = None): # type: ignore
+    def __init__(self, name: str, amount: int, blockchain: "Blockchain"): # type: ignore
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
@@ -147,3 +149,6 @@ print(test_blockchain)
 
 #TODO: implement server based or peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
 #TODO: implement a wallet class to store the public and private keys of the user.
+
+#TODO: store the blockchain in a file of sort, and make a user system where i (a user) can log into my wallet and mine blocks to somehow gather $XITE (fake money for now as an int somewhere)
+#TODO: make it so that $XITE cant just be given to a user, like how we are giving currently to user objects. 
