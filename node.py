@@ -15,6 +15,7 @@
 
 from datetime import datetime
 import hashlib
+import json
 # from multiprocessing import pool
 import rsa
 
@@ -25,6 +26,7 @@ class Data:
         self.recipient = recipient
         self.amount = amount
         self.message = message
+        self.transaction ={"sender":sender.name, "recipient": recipient.name, "amount": amount, "message": message}
 
     def __str__(self):
         return self.message
@@ -39,6 +41,19 @@ class Block:
 
     def __str__(self):
         return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
+    
+    def to_dict(self):
+        return {
+            'hash': self.hash,
+            'data': self.data.transaction,
+            'timestamp': self.timestamp,
+        }
+
+    @staticmethod
+    def load(filename):
+        with open(filename, 'r') as f:
+            return json.load(f)
+
 
     def hash_block(self) -> str:
         data_string = f"{self.data.sender}{self.data.recipient}{self.data.amount}{self.data.timestamp}"
@@ -61,11 +76,18 @@ class Blockchain:
             chain_data += str(block)
             chain_data += "\n"
         return chain_data
+    
+    def to_dict(self) ->list:
+        return [block.data.transaction for block in self.chain]
+    
+    def __call__(self):
+        with open("xite_blockchain", 'w') as f:
+            json.dump(self.to_dict(), f)
 
     def create_genesis_block(self):
         first_hash = "xite"
         first_nonce = 32
-        data = Data(None, None, 0, "Genesis Block") # type: ignore
+        data = Data(User("Genesis", 0, self), User("Genesis", 0, self), 0, "Genesis Block") # type: ignore
         genesis_block = Block(first_hash, data, first_nonce)
         self.chain.append(genesis_block)
 
@@ -75,11 +97,11 @@ class Blockchain:
             # while self.valid_proof(block, block.nonce) is False:
             iteration += 1
             block.nonce += 1
-            print((self.valid_proof(block, block.nonce)[1] + " ITERATION: " + str(iteration)), end="\r")
+            print((self.valid_proof(block, block.nonce)[1] + " HASHES: " + str(iteration)), end="\r")
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        difficulity = "00000"
+        difficulity = "0000"
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return [guess_hash[:int(len(difficulity))] == difficulity, guess_hash]
@@ -89,10 +111,13 @@ class Blockchain:
         block.nonce = nonce
         self.chain.append(block)
 
+        with open("xite_blockchain.json", 'w') as f:
+            json.dump(self.to_dict(), f)
+
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
-        signature = block.data.sender.sign(block.data.message)  # Generate the signature using the sender's private key
-        if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":  # Pass the signature as bytes and the sender's public key
+        signature = block.data.sender.sign(block.data.message)
+        if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
             return True
         return False
 
