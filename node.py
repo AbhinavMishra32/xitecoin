@@ -22,6 +22,8 @@ from textwrap import indent
 import rsa
 import random
 
+
+
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
@@ -65,20 +67,25 @@ class Block:
 
 
 class Blockchain:
-    def __init__(self,):
-        self.chain = []
+    def __init__(self, name: str):
+        self.chain: list = []
+        self.name: str = name
         try:
-            with open("xite_blockchain.json", 'r') as f:
+            with open(f"{self.name}.json", 'r') as f:
                 blockchain_data = json.load(f)
             if(self.verify_blockchain()):
                 for block in blockchain_data:
-                    sender = User(block['data']['sender_name'], block['data']['amount'], self)
-                    recipient = User(block['data']['recipient_name'], block['data']['amount'], self)
+                    sender = User(block['data']['sender_name'], self)
+                    recipient = User(block['data']['recipient_name'], self)
                     data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                     new_block = Block(block['hash'], data, block['nonce'])
                     self.chain.append(new_block)
-        except (FileNotFoundError, json.JSONDecodeError):
-            self.create_genesis_block()
+        except:
+            first_hash = "xite"
+            first_nonce = 32
+            data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
+            genesis_block = Block(first_hash, data, first_nonce)
+            self.add_block(genesis_block)
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]
@@ -100,7 +107,7 @@ class Blockchain:
     def create_genesis_block(self):
         first_hash = "xite"
         first_nonce = 32
-        data = Data(User("Genesis", 0, self), User("Genesis", 0, self), 0, "Genesis Block") # type: ignore
+        data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
         genesis_block = Block(first_hash, data, first_nonce)
         self.chain.append(genesis_block)
 
@@ -124,7 +131,7 @@ class Blockchain:
         block.nonce = nonce
         self.chain.append(block)
         if(self.verify_blockchain):
-            with open("xite_blockchain.json", 'w') as f:
+            with open(f"{self.name}.json", 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
                 print("Blockchain Verified!")
         else:
@@ -147,11 +154,20 @@ class Blockchain:
 
 
 class User:
-    def __init__(self, name: str, amount: int, blockchain: "Blockchain"):
+    def __init__(self, name: str, blockchain: "Blockchain"):
         self.name = name
-        self.amount = amount
         self.blockchain = blockchain
+        self.amount = self.get_balance()
         self.public_key, self._private_key = rsa.newkeys(512)
+
+    def get_balance(self):
+        balance = 0
+        for block in self.blockchain.chain: 
+            if block.data.sender.name == self.name:
+                balance -= block.data.amount
+            if block.data.recipient.name == self.name:
+                balance += block.data.amount
+        return balance
 
     def sign(self, message: str) -> bytes:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
@@ -179,36 +195,43 @@ class User:
         return transaction_data
 
 
+if __name__ == "__main__":
+    xite_blockchain = Blockchain("xite_blockchain")
+    # test_blockchain.create_genesis_block()
+    # print(test_blockchain[0])
 
-test_blockchain = Blockchain()
-# test_blockchain.create_genesis_block()
-# print(test_blockchain[0])
-
-# Jason = User("Jason", 200, test_blockchain)
-# Mones = User("Mones", 825, test_blockchain)
-# Jordi = User("Jordi", 10000, test_blockchain)
+    # Jason = User("Jason", 200, test_blockchain)
+    # Mones = User("Mones", 825, test_blockchain)
+    # Jordi = User("Jordi", 10000, test_blockchain)
 
 
-# print(Jason.transaction(Mones, 1000))
-# print(Jordi.transaction(Jason, 2632))
-# List of user names
-users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
+    # print(Jason.transaction(Mones, 1000))
+    # print(Jordi.transaction(Jason, 2632))
+    # List of user names
+    users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
 
-# Generate random transactions
-# for _ in range(10):
-#     sender = random.choice(users)
-#     recipient = random.choice(users)
-#     amount1 = random.randint(1, 1000)
-#     amount2 = random.randint(1, 1000)
-#     amount3 = random.randint(1, 300)
-#     sender_user = User(sender, amount1, test_blockchain)
-#     recipient_user = User(recipient, amount2, test_blockchain)
-#     sender_user.transaction(recipient_user, amount3)
+    # Generate random transactions
+    # for _ in range(10):
+    #     sender = random.choice(users)
+    #     recipient = random.choice(users)
+    #     amount1 = random.randint(1, 1000)
+    #     amount2 = random.randint(1, 1000)
+    #     amount3 = random.randint(1, 300)
+    #     sender_user = User(sender, amount1, test_blockchain)
+    #     recipient_user = User(recipient, amount2, test_blockchain)
+    #     sender_user.transaction(recipient_user, amount3)
 
-# print(Jason.amount)
-# print(Mones.amount)
+    # print(Jason.amount)
+    # print(Mones.amount)
+    Alice = User("Alice", xite_blockchain)
+    Bob = User("Bob", xite_blockchain)
+    Charlie = User("Charlie", xite_blockchain)
+    Dave = User("Dave", xite_blockchain)
+    Eve = User("Eve", xite_blockchain)
 
-print(test_blockchain)
+    print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
+
+    print(xite_blockchain)
 
 #user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
