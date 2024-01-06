@@ -16,8 +16,11 @@
 from datetime import datetime
 import hashlib
 import json
+from os import error
+from textwrap import indent
 # from multiprocessing import pool
 import rsa
+import random
 
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
@@ -26,7 +29,7 @@ class Data:
         self.recipient = recipient
         self.amount = amount
         self.message = message
-        self.transaction ={"sender":sender.name, "recipient": recipient.name, "amount": amount, "message": message}
+        self.transaction = {"sender_name":sender.name, "recipient_name": recipient.name, "amount": amount, "message": message}
 
     def __str__(self):
         return self.message
@@ -47,6 +50,7 @@ class Block:
             'hash': self.hash,
             'data': self.data.transaction,
             'timestamp': self.timestamp,
+            'nonce': self.nonce,
         }
 
     @staticmethod
@@ -61,10 +65,22 @@ class Block:
 
 
 class Blockchain:
-    def __init__(self):
+    def __init__(self,):
         self.chain = []
+        try:
+            with open("xite_blockchain.json", 'r') as f:
+                blockchain_data = json.load(f)
+            if(self.verify_blockchain()):
+                for block in blockchain_data:
+                    sender = User(block['data']['sender_name'], block['data']['amount'], self)
+                    recipient = User(block['data']['recipient_name'], block['data']['amount'], self)
+                    data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
+                    new_block = Block(block['hash'], data, block['nonce'])
+                    self.chain.append(new_block)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.create_genesis_block()
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Block:
         return self.chain[index]
 
     def __str__(self):
@@ -78,11 +94,8 @@ class Blockchain:
         return chain_data
     
     def to_dict(self) ->list:
-        return [block.data.transaction for block in self.chain]
+        return [block.to_dict() for block in self.chain]
     
-    def __call__(self):
-        with open("xite_blockchain", 'w') as f:
-            json.dump(self.to_dict(), f)
 
     def create_genesis_block(self):
         first_hash = "xite"
@@ -105,14 +118,17 @@ class Blockchain:
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return [guess_hash[:int(len(difficulity))] == difficulity, guess_hash]
-
+    
     def add_block(self, block):
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
-
-        with open("xite_blockchain.json", 'w') as f:
-            json.dump(self.to_dict(), f)
+        if(self.verify_blockchain):
+            with open("xite_blockchain.json", 'w') as f:
+                json.dump(self.to_dict(), f, indent = 4)
+                print("Blockchain Verified!")
+        else:
+            print("Blockchain incorrect!")
 
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
@@ -120,10 +136,18 @@ class Blockchain:
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
             return True
         return False
+    
+    def verify_blockchain(self) -> bool:
+        for i in range(1, len(self.chain)):
+            if self.valid_proof(self[i-1], self[i-1].nonce)[1] != self[i].hash:
+                raise ValueError("Invalid blockchain: hash does not match!")
+                return False
+        print("BLOCKCHAIN VERIFIED AND OPENED!")
+        return True
 
 
 class User:
-    def __init__(self, name: str, amount: int, blockchain: "Blockchain"): # type: ignore
+    def __init__(self, name: str, amount: int, blockchain: "Blockchain"):
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
@@ -149,7 +173,7 @@ class User:
         new_block = Block(transaction_hash, transaction_data)
         if self.blockchain.verify_block(new_block):
             self.blockchain.add_block(new_block)
-            print("Transaction was verified!")
+            print("Transaction was verified! ")
         else: 
             print("Transaction was not able to be verified!")
         return transaction_data
@@ -157,14 +181,30 @@ class User:
 
 
 test_blockchain = Blockchain()
-test_blockchain.create_genesis_block()
+# test_blockchain.create_genesis_block()
 # print(test_blockchain[0])
 
-Jason = User("Jason", 200, test_blockchain)
-Mones = User("Mones", 825, test_blockchain)
+# Jason = User("Jason", 200, test_blockchain)
+# Mones = User("Mones", 825, test_blockchain)
+# Jordi = User("Jordi", 10000, test_blockchain)
 
 
-print(Jason.transaction(Mones, 100))
+# print(Jason.transaction(Mones, 1000))
+# print(Jordi.transaction(Jason, 2632))
+# List of user names
+users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
+
+# Generate random transactions
+# for _ in range(10):
+#     sender = random.choice(users)
+#     recipient = random.choice(users)
+#     amount1 = random.randint(1, 1000)
+#     amount2 = random.randint(1, 1000)
+#     amount3 = random.randint(1, 300)
+#     sender_user = User(sender, amount1, test_blockchain)
+#     recipient_user = User(recipient, amount2, test_blockchain)
+#     sender_user.transaction(recipient_user, amount3)
+
 # print(Jason.amount)
 # print(Mones.amount)
 
