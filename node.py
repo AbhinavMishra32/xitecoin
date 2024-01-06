@@ -17,8 +17,6 @@ from datetime import datetime
 import hashlib
 # from multiprocessing import pool
 import rsa
-# from cryptography.hazmat.primitives.asymmetric import rsa
-# from cryptography.hazmat.primitives import serialization
 
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
@@ -34,7 +32,6 @@ class Data:
 
 class Block:
     def __init__(self, hash: str, data: Data, nonce: int = 0):
-        # self.hash = self.hash_block()
         self.hash = hash
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         self.data = data
@@ -60,7 +57,7 @@ class Blockchain:
         block_index: int = -1
         for block in self.chain:
             block_index += 1
-            chain_data += f"INDEX: {block_index} "
+            chain_data += f"BLOCK: {block_index} "
             chain_data += str(block)
             chain_data += "\n"
         return chain_data
@@ -80,10 +77,10 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
+        difficulity = "0000"
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return [guess_hash[:4] == "0000", guess_hash]
-        # return guess_hash[:4] == "00000"
+        return [guess_hash[:4] == difficulity, guess_hash]
 
     def add_block(self, block):
         nonce = self.proof_of_work(block)
@@ -91,6 +88,7 @@ class Blockchain:
         self.chain.append(block)
 
     def verify_block(self, block: "Block") -> bool:
+        # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
         signature = block.data.sender.sign(block.data.message)  # Generate the signature using the sender's private key
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":  # Pass the signature as bytes and the sender's public key
             return True
@@ -103,14 +101,15 @@ class User:
         self.amount = amount
         self.blockchain = blockchain
         self.public_key, self._private_key = rsa.newkeys(512)
-        #public key: Sign(Message, private key) = signature
-        #private key: Verify(Message, public key, signature) = True/False
-        #TODO: Fix the signature verification, and implement correct public and private key feature.    
+
     def sign(self, message: str) -> bytes:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
         return signature
 
     def transaction(self, recipient: "User", amount: int) -> Data:
+        """
+        Returns Data and also adds new Block to the Blockchain automatically.
+        """
         if self.amount < amount:
             print("Insufficient balance")
             return # type: ignore
@@ -139,8 +138,8 @@ Mones = User("Mones", 825, test_blockchain)
 
 
 print(Jason.transaction(Mones, 100))
-print(Jason.amount)
-print(Mones.amount)
+# print(Jason.amount)
+# print(Mones.amount)
 
 print(test_blockchain)
 
