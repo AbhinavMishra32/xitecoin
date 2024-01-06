@@ -15,13 +15,13 @@
 
 from datetime import datetime
 import hashlib
-from multiprocessing import pool
+# from multiprocessing import pool
 import rsa
 # from cryptography.hazmat.primitives.asymmetric import rsa
 # from cryptography.hazmat.primitives import serialization
 
 class Data:
-    def __init__(self, sender: "User", recipient: "User", amount: int, message: str):
+    def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
         self.sender = sender
         self.recipient = recipient
@@ -82,13 +82,21 @@ class Blockchain:
     def valid_proof(self, block: "Block", nonce: int) -> list:
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return [guess_hash[:4] == "00000", guess_hash]
+        return [guess_hash[:4] == "0000", guess_hash]
         # return guess_hash[:4] == "00000"
 
     def add_block(self, block):
         nonce = self.proof_of_work(block)
         block.nonce = nonce
+
+
+
         self.chain.append(block)
+
+
+    def verify_block(self, block: "Block"):                #each transaction has a different public and private key
+        if rsa.verify(block.data.message.encode(), block.data.sender.signature, "SHA-256") == "SHA-256":
+            pass
 
 
 class User:
@@ -96,13 +104,13 @@ class User:
         self.name = name
         self.amount = amount
         self.blockchain = blockchain
-        (self.public_key, self.private_key) = rsa.newkeys(512)
+        self.public_key, self.private_key = rsa.newkeys(512)
 
-    #public key: Sign(Message, private key) = signature
-    #private key: Verify(Message, public key, signature) = True/False
-    #TODO: Fix the signature verification, and implement correct public and private key feature.
-    def sign(self, message: str, data: 'Data') -> str:
-        message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
+        #public key: Sign(Message, private key) = signature
+        #private key: Verify(Message, public key, signature) = True/False
+        #TODO: Fix the signature verification, and implement correct public and private key feature.    
+    def sign(self, message: str) -> bytes:
+        # message = f"{data.sender}{data.recipient}{data.amount}{data.timestamp}"
         signature = rsa.sign(message.encode(), self.private_key, "SHA-256")
         return signature
 
@@ -113,12 +121,20 @@ class User:
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
-        message = f"{self.name} gave {recipient.name} {amount} $XITE"
-        transaction_data = Data(self, recipient, amount, message)
-        transaction_hash = hashlib.sha256(message.encode()).hexdigest()
+        self.message = f"{self.name} gave {recipient.name} {amount} $XITE" #this message has to be signed
+        transaction_data = Data(self, recipient, amount, self.message)
+        signature = self.sign(self.message)
+        transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
         new_block = Block(transaction_hash, transaction_data)
         self.blockchain.add_block(new_block)
         return transaction_data
+    def sign_msg(self, message: str) ->bytes:
+        return rsa.sign(message.encode(), self.private_key, "SHA-256")
+
+# class Transaction:
+#     def __init__(self, user:'User'):
+
+
 
 
 test_blockchain = Blockchain()
@@ -128,12 +144,17 @@ test_blockchain.create_genesis_block()
 Jason = User("Jason", 200, test_blockchain)
 Mones = User("Mones", 825, test_blockchain)
 
+jason_wallet = Wallet(Jason)
+# print(jason_wallet)
+
+
 print(Jason.transaction(Mones, 100))
 print(Jason.amount)
 print(Mones.amount)
 
 print(test_blockchain)
 
+#user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
 #TODO: implement server based or peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
 #TODO: implement a wallet class to store the public and private keys of the user.
