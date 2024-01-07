@@ -47,7 +47,7 @@ class Block:
 
     def __str__(self):
         return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
-    
+
     def to_dict(self):
         return {
             'hash': self.hash,
@@ -72,22 +72,17 @@ class Blockchain:
         self.chain: list = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
-   
-        try:
-            if self.load_blockchain() and self.verify_blockchain():
-                print("Correct Blockchain!")
-        except:
-            print("Please use the correct blockchain! OR Blockchain doesnt exists")
-            first_hash = "xite"
-            first_nonce = 32
-            data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
-            genesis_block = Block(first_hash, data, first_nonce)
-            self.add_block(genesis_block)
 
-
-        # except:
-            
-            # print("ERROR! ")
+        # if not self.load_blockchain():
+        #     raise ValueError("Failed to load blockchain!")
+        # self.verify_blockchain()
+            # print("Correct Blockchain!")
+            # print("Please use the correct blockchain! OR Blockchain doesnt exists")
+            # first_hash = "xite"
+            # first_nonce = 32
+            # data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
+            # genesis_block = Block(first_hash, data, first_nonce)
+            # self.add_block(genesis_block)
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]
@@ -112,7 +107,8 @@ class Blockchain:
                 data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                 new_block = Block(block['hash'], data, block['nonce'])
                 self.chain.append(new_block)
-                return True
+                # print(f"LOADED BLOCK: {block}")
+            return True
         except Exception as e:
             print(f"Failed to lead blockchain: {e}")
             return False
@@ -149,11 +145,7 @@ class Blockchain:
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
-        if(self.verify_blockchain()):
-            self.save_blockchain()
-            print("Blockchain verified! ")
-        else:
-            print("Blockchain incorrect!")
+        self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
@@ -162,19 +154,18 @@ class Blockchain:
             return True
         return False
     
-    def verify_blockchain(self) -> bool:
+    def verify_blockchain(self):
         for i in range(1, len(self.chain)):
             if self.valid_proof(self[i-1], self[i-1].nonce)[1] != self[i].hash:
                 raise ValueError("Invalid blockchain: hash does not match!")
+            else:
+                print("BLOCKCHAIN VERIFIED AND OPENED!")
                 # print("Invalid blockchain: hash does not match!")
-                return False
             # for transaction in self[i].data.transaction:
             #     sender = User(self.chain.block.data.transaction.sender_name, self)
             #     if sender.amount < transaction['amount']:
             #         raise ValueError("Invalid blockchain: sender does not have enough balance for transaction!")
             #         return False
-        print("BLOCKCHAIN VERIFIED AND OPENED!")
-        return True
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
@@ -223,21 +214,12 @@ class User:
 
 
 if __name__ == "__main__":
-    xite_blockchain = Blockchain("xite_blockchain")
+    xite_blockchain = Blockchain("xite_blockchain_1")
     # test_blockchain.create_genesis_block()
     # print(test_blockchain[0])
 
-    # Jason = User("Jason", 200, test_blockchain)
-    # Mones = User("Mones", 825, test_blockchain)
-    # Jordi = User("Jordi", 10000, test_blockchain)
-
-
-    # print(Jason.transaction(Mones, 1000))
-    # print(Jordi.transaction(Jason, 2632))
-    # List of user names
     users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
 
-    # Generate random transactions
     # for _ in range(10):
     #     sender = random.choice(users)
     #     recipient = random.choice(users)
@@ -248,23 +230,24 @@ if __name__ == "__main__":
     #     recipient_user = User(recipient, amount2, test_blockchain)
     #     sender_user.transaction(recipient_user, amount3)
 
-    # print(Jason.amount)
-    # print(Mones.amount)
     Alice = User("Alice", xite_blockchain)
     Bob = User("Bob", xite_blockchain)
     Charlie = User("Charlie", xite_blockchain)
     Dave = User("Dave", xite_blockchain)
     Eve = User("Eve", xite_blockchain)
 
-    Dave.transaction(Eve, 10)
+    # Dave.transaction(Eve, 0)
+    # Eve.transaction(Bob, 0)
+    # Alice.transaction(Charlie, 0)
 
-    print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
+
+    # print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
 
     print(xite_blockchain)
 
-#user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
+#TODO: user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
-#TODO: implement server based or peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
+#TODO: implement server based or peer to peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
 #TODO: implement a wallet class to store the public and private keys of the user.
 
 #TODO: store the blockchain in a file of sort, and make a user system where i (a user) can log into my wallet and mine blocks to somehow gather $XITE (fake money for now as an int somewhere)
