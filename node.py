@@ -30,6 +30,7 @@ import rsa
 import random
 
 DIFFICULITY = 4
+HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
 
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
@@ -71,8 +72,13 @@ class Block:
 
 
     def hash_block(self) -> str:
-        data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}{self.data.timestamp}"
-        return hashlib.sha256(data_string.encode()).hexdigest()
+        if HASH_WITHOUT_TIMESTAMP:
+            data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}"
+            return hashlib.sha256(data_string.encode()).hexdigest()
+        else:
+            data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}{self.data.timestamp}"
+            return hashlib.sha256(data_string.encode()).hexdigest()
+        
     
     def hash_block_verify(self) ->str:
         data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}"
@@ -168,7 +174,6 @@ class Blockchain:
         # self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
-        #! make it also see if previous block had PROOF OF WORK, meaning it has NONCE value which when used with hash of previous block produces 0000 at the beginning
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
         signature = block.data.sender.sign(block.data.message)
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
