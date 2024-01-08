@@ -13,6 +13,12 @@
 # public and private keys of the user. The wallet is also used to create
 # transactions, and to sign them.
 
+#*  XITECOIN IMPLEMENTATION (WORKING):
+#*  
+#*
+#*
+#*
+
 import os
 from datetime import datetime
 import hashlib
@@ -23,7 +29,7 @@ from textwrap import indent
 import rsa
 import random
 
-
+DIFFICULITY = 4
 
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
@@ -39,18 +45,20 @@ class Data:
 
 
 class Block:
-    def __init__(self, hash: str, data: Data, nonce: int = 0):
-        self.hash = hash
+    def __init__(self, data: Data, nonce: int = 0):
+        self.prev_hash = ""
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         self.data = data
         self.nonce = nonce
+        self.hash = self.hash_block()
 
     def __str__(self):
-        return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
+        return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
 
     def to_dict(self):
         return {
-            'hash': self.hash,
+            'prev_hash': self.prev_hash,
+            'hash':self.hash,
             'data': self.data.transaction,
             'timestamp': self.timestamp,
             'nonce': self.nonce,
@@ -63,12 +71,18 @@ class Block:
 
 
     def hash_block(self) -> str:
-        data_string = f"{self.data.sender}{self.data.recipient}{self.data.amount}{self.data.timestamp}"
+        data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}{self.data.timestamp}"
+        return hashlib.sha256(data_string.encode()).hexdigest()
+    
+    def hash_block_verify(self) ->str:
+        data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}"
         return hashlib.sha256(data_string.encode()).hexdigest()
 
 
 class Blockchain:
     def __init__(self, name: str):
+        #GENESIS BLOCK CREATION: 
+
         self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
@@ -105,7 +119,8 @@ class Blockchain:
                 sender = User(block['data']['sender_name'], self)
                 recipient = User(block['data']['recipient_name'], self)
                 data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-                new_block = Block(block['hash'], data, block['nonce'])
+                # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
+                new_block = Block(data, block['nonce'])
                 self.chain.append(new_block)
                 # print(f"LOADED BLOCK: {block}")
             return True
@@ -119,32 +134,38 @@ class Blockchain:
     
 
     def create_genesis_block(self):
-        first_hash = "xite"
+        # first_prev_hash = "etix"
+        # first_hash = "xite"
         first_nonce = 32
         data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
-        genesis_block = Block(first_hash, data, first_nonce)
+        genesis_block = Block(data, first_nonce)
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
         iteration = 0
         while self.valid_proof(block, block.nonce)[0] is False:
-            # while self.valid_proof(block, block.nonce) is False:
             iteration += 1
             block.nonce += 1
             print((self.valid_proof(block, block.nonce)[1] + " HASHES: " + str(iteration)), end="\r")
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        difficulity = "0000"
-        guess = f"{block.hash_block()}{nonce}".encode()
+        guess = f"{block.hash}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
-        return [guess_hash[:int(len(difficulity))] == difficulity, guess_hash]
+        
+        return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
 
-    def add_block(self, block):
+    def add_block(self, block: 'Block'):
+        # for _ in range(1, len(self.chain)):
+        #     self.chain[_].prev_hash = self.chain[_-1].hash
+        if len(self.chain) > 0:
+            block.prev_hash = self.chain[-1].hash
+        else:
+            block.prev_hash = None  # type: ignore
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
-        self.save_blockchain()
+        # self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
         #! make it also see if previous block had PROOF OF WORK, meaning it has NONCE value which when used with hash of previous block produces 0000 at the beginning
@@ -155,10 +176,20 @@ class Blockchain:
         return False
     
     # def new_proof_of_work_generate(self, )
-    
+
+    def verify_PoW_singlePass(self, block) -> bool:
+        guess = f"{block.hash}{block.nonce}".encode()
+        guess_hash = hashlib.sha256(guess).hexdigest()
+
+        if guess_hash[:DIFFICULITY] == DIFFICULITY*"0":
+            return True
+        else:
+            return False
+
+
     def verify_blockchain(self):
         for i in range(2, len(self.chain)):
-            if self.valid_proof(self[i-1], self[i-1].nonce)[1] != self[i].hash:
+            if not self.verify_PoW_singlePass(self.chain):
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
                 print("BLOCKCHAIN VERIFIED AND OPENED!")
@@ -181,7 +212,7 @@ class User:
         self.public_key, self._private_key = rsa.newkeys(512)
 
     def __str__(self):
-        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User Balance: {self.amount}"
+        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User balance at time of transaction: {self.amount}"
 
     def get_balance(self):
         balance = 0
@@ -208,8 +239,8 @@ class User:
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
         self.message = f"{self.name} gave {recipient.name} {amount} $XITE" #this message has to be signed
         transaction_data = Data(self, recipient, amount, self.message)
-        transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
-        new_block = Block(transaction_hash, transaction_data)
+        # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
+        new_block = Block(transaction_data) #* gives current transaction data's hash to the current block but add_block() method automatically gives the hash of the current block to the next block. (or current block has previous block's hash)
         if self.blockchain.verify_block(new_block):
             self.blockchain.add_block(new_block)
             print("Transaction was verified! ")
@@ -220,9 +251,9 @@ class User:
 
 if __name__ == "__main__":
     xite_blockchain = Blockchain("xite_blockchain_1")
-    xite_blockchain.load_blockchain()
-    xite_blockchain.verify_blockchain()
-    # xite_blockchain.create_genesis_block()
+    # xite_blockchain.load_blockchain()
+    # xite_blockchain.verify_blockchain()
+    xite_blockchain.create_genesis_block()
     # print(test_blockchain[0])
 
     users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
@@ -241,13 +272,13 @@ if __name__ == "__main__":
     Bob = User("Bob", xite_blockchain)
     Charlie = User("Charlie", xite_blockchain)
     Dave = User("Dave", xite_blockchain)
-    # Eve = User("Eve", xite_blockchain)
+    Eve = User("Eve", xite_blockchain)
 
-    # Dave.transaction(Eve, 0)
-    # Eve.transaction(Bob, 0)
-    # Alice.transaction(Charlie, 0)
+    Dave.transaction(Eve, 0)
+    Eve.transaction(Bob, 0)
+    Alice.transaction(Charlie, 0)
 
-    # xite_blockchain.save_blockchain()
+    xite_blockchain.save_blockchain()
 
 
     # print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
@@ -266,3 +297,8 @@ if __name__ == "__main__":
 # For normal transaction anybody can do a transaction and it will be added to a block.
 # A function will be recurring once every 1-2 min and hashing the transactions into the blockchain with each block
 # for using that function to hash blocks into the blockchain, there will be a reward!
+    
+
+#NEW IMPLEMENTATION;
+    # Each block has hash of previous block. This links blocks together.
+    # NONCE: What's nonce: (Number Used Once) its a value which when added with hash of previous block creates 0000 as starting values of the hash of previous block.

@@ -1,46 +1,50 @@
 [
     {
-        "hash": "xite",
+        "prev_hash": "",
+        "hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
         "data": {
             "sender_name": "Genesis",
             "recipient_name": "Genesis",
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "08/01/2024 22:40:10",
+        "timestamp": "09/01/2024 02:53:14",
         "nonce": 32
     },
     {
-        "hash": "b418ce14938512181b6b8a54dbf513cd55f1692ee30e6aedcd906a5f496aa8b4",
+        "prev_hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
+        "hash": "57938563d82ae5df71292148b9b74ce9e60756fc2afec8fed3d37c49230c2f83",
         "data": {
             "sender_name": "Dave",
             "recipient_name": "Eve",
             "amount": 0,
             "message": "Dave gave Eve 0 $XITE"
         },
-        "timestamp": "08/01/2024 22:40:10",
-        "nonce": 10855
+        "timestamp": "09/01/2024 02:53:14",
+        "nonce": 17495
     },
     {
-        "hash": "d89a04580cef712ea657a0a3b76604f4c70b12cd1ae0475b822e886e2956e7a9",
+        "prev_hash": "57938563d82ae5df71292148b9b74ce9e60756fc2afec8fed3d37c49230c2f83",
+        "hash": "e41dc72f21b17d19670d3c0987c6cfaea770182e1638df8a18910fc3d6d93512",
         "data": {
             "sender_name": "Eve",
             "recipient_name": "Bob",
             "amount": 0,
             "message": "Eve gave Bob 0 $XITE"
         },
-        "timestamp": "08/01/2024 22:40:10",
-        "nonce": 30918
+        "timestamp": "09/01/2024 02:53:14",
+        "nonce": 94910
     },
     {
-        "hash": "f34bc74b9b01e054e0fdea5a1f95a385d3fc35633cfb4018bdb2df99b1bbde66",
+        "prev_hash": "e41dc72f21b17d19670d3c0987c6cfaea770182e1638df8a18910fc3d6d93512",
+        "hash": "7c40896a8689e65ed24db42458ec1125f88427832154a23f0b651bbc1a89e4e1",
         "data": {
             "sender_name": "Alice",
             "recipient_name": "Charlie",
             "amount": 0,
             "message": "Alice gave Charlie 0 $XITE"
         },
-        "timestamp": "08/01/2024 22:40:11",
-        "nonce": 143507
+        "timestamp": "09/01/2024 02:53:15",
+        "nonce": 6368
     }
 ]
