@@ -69,7 +69,7 @@ class Block:
 
 class Blockchain:
     def __init__(self, name: str):
-        self.chain: list = []
+        self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
 
@@ -110,9 +110,8 @@ class Blockchain:
                 # print(f"LOADED BLOCK: {block}")
             return True
         except Exception as e:
-            print(f"Failed to lead blockchain: {e}")
+            print(f"Failed to load blockchain: {e}")
             return False
-        return True
         
 
     def to_dict(self) ->list:
@@ -122,7 +121,7 @@ class Blockchain:
     def create_genesis_block(self):
         first_hash = "xite"
         first_nonce = 32
-        data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
+        data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
         genesis_block = Block(first_hash, data, first_nonce)
         self.chain.append(genesis_block)
 
@@ -155,7 +154,7 @@ class Blockchain:
         return False
     
     def verify_blockchain(self):
-        for i in range(1, len(self.chain)):
+        for i in range(2, len(self.chain)):
             if self.valid_proof(self[i-1], self[i-1].nonce)[1] != self[i].hash:
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
@@ -177,6 +176,9 @@ class User:
         self.blockchain = blockchain
         self.amount = self.get_balance()
         self.public_key, self._private_key = rsa.newkeys(512)
+
+    def __str__(self):
+        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User Balance: {self.amount}"
 
     def get_balance(self):
         balance = 0
@@ -215,7 +217,9 @@ class User:
 
 if __name__ == "__main__":
     xite_blockchain = Blockchain("xite_blockchain_1")
-    # test_blockchain.create_genesis_block()
+    xite_blockchain.load_blockchain()
+    xite_blockchain.verify_blockchain()
+    # xite_blockchain.create_genesis_block()
     # print(test_blockchain[0])
 
     users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
@@ -234,11 +238,13 @@ if __name__ == "__main__":
     Bob = User("Bob", xite_blockchain)
     Charlie = User("Charlie", xite_blockchain)
     Dave = User("Dave", xite_blockchain)
-    Eve = User("Eve", xite_blockchain)
+    # Eve = User("Eve", xite_blockchain)
 
     # Dave.transaction(Eve, 0)
     # Eve.transaction(Bob, 0)
     # Alice.transaction(Charlie, 0)
+
+    # xite_blockchain.save_blockchain()
 
 
     # print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])

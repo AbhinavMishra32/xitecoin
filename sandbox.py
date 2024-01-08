@@ -1,7 +1,8 @@
 from node import Block, Blockchain, User, Data
 
-new_blockchain = Blockchain("new_blockchain_1")
-new_blockchain.create_genesis_block()
+new_blockchain = Blockchain("new_blockchain_2")
+# new_blockchain.load_blockchain()
+# new_blockchain.create_genesis_block()
 # if not new_blockchain.load_blockchain():
 #     raise ValueError("Failed to load blockchain!")
 # else:
@@ -10,15 +11,17 @@ new_blockchain.create_genesis_block()
 Banti = User("Banti", new_blockchain)
 Rinki = User("Rinki", new_blockchain)
 
-# new_blockchain.create_genesis_block()
-print(new_blockchain)
+new_blockchain.create_genesis_block()
 data = Banti.transaction(Rinki, 0)
 
-print("PROOF:")
-if new_blockchain.valid_proof(new_blockchain[0], new_blockchain[0].nonce):
-    print("Valid proof")
+print(new_blockchain)
+# print("PROOF:")
+# print(new_blockchain.proof_of_work(new_blockchain[0]))
+
+# if(new_blockchain.proof_of_work(new_blockchain[0])):
+#     print()
 
 print("----------")
-print(data)
-print([Banti.amount, Rinki.amount])
-print(new_blockchain)
+# print(data)
+# print([Banti.amount, Rinki.amount])
+# print(new_blockchain)

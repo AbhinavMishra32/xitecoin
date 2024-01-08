@@ -1,3 +1,3 @@
 import hashlib
 
-string = 
+string = ""
