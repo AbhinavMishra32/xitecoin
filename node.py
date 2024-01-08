@@ -121,7 +121,7 @@ class Blockchain:
     def create_genesis_block(self):
         first_hash = "xite"
         first_nonce = 32
-        data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
+        data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
         genesis_block = Block(first_hash, data, first_nonce)
         self.chain.append(genesis_block)
 
