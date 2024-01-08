@@ -139,7 +139,7 @@ class Blockchain:
         guess = f"{block.hash_block()}{nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         return [guess_hash[:int(len(difficulity))] == difficulity, guess_hash]
-    
+
     def add_block(self, block):
         nonce = self.proof_of_work(block)
         block.nonce = nonce
@@ -147,11 +147,14 @@ class Blockchain:
         self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
+        #! make it also see if previous block had PROOF OF WORK, meaning it has NONCE value which when used with hash of previous block produces 0000 at the beginning
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
         signature = block.data.sender.sign(block.data.message)
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
             return True
         return False
+    
+    # def new_proof_of_work_generate(self, )
     
     def verify_blockchain(self):
         for i in range(2, len(self.chain)):
