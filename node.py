@@ -13,6 +13,7 @@
 # public and private keys of the user. The wallet is also used to create
 # transactions, and to sign them.
 
+import os
 from datetime import datetime
 import hashlib
 import json
@@ -46,7 +47,7 @@ class Block:
 
     def __str__(self):
         return f"HASH: {self.hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
-    
+
     def to_dict(self):
         return {
             'hash': self.hash,
@@ -68,24 +69,20 @@ class Block:
 
 class Blockchain:
     def __init__(self, name: str):
-        self.chain: list = []
+        self.chain: list[Block] = []
         self.name: str = name
-        try:
-            with open(f"{self.name}.json", 'r') as f:
-                blockchain_data = json.load(f)
-            if(self.verify_blockchain()):
-                for block in blockchain_data:
-                    sender = User(block['data']['sender_name'], self)
-                    recipient = User(block['data']['recipient_name'], self)
-                    data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-                    new_block = Block(block['hash'], data, block['nonce'])
-                    self.chain.append(new_block)
-        except:
-            first_hash = "xite"
-            first_nonce = 32
-            data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
-            genesis_block = Block(first_hash, data, first_nonce)
-            self.add_block(genesis_block)
+        self.file_path = f"{self.name}.json"
+
+        # if not self.load_blockchain():
+        #     raise ValueError("Failed to load blockchain!")
+        # self.verify_blockchain()
+            # print("Correct Blockchain!")
+            # print("Please use the correct blockchain! OR Blockchain doesnt exists")
+            # first_hash = "xite"
+            # first_nonce = 32
+            # data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
+            # genesis_block = Block(first_hash, data, first_nonce)
+            # self.add_block(genesis_block)
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]
@@ -100,6 +97,23 @@ class Blockchain:
             chain_data += "\n"
         return chain_data
     
+    def load_blockchain(self) -> bool:
+        try:
+            with open(self.file_path, 'r') as f:
+                    blockchain_data = json.load(f)
+            for block in blockchain_data:
+                sender = User(block['data']['sender_name'], self)
+                recipient = User(block['data']['recipient_name'], self)
+                data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
+                new_block = Block(block['hash'], data, block['nonce'])
+                self.chain.append(new_block)
+                # print(f"LOADED BLOCK: {block}")
+            return True
+        except Exception as e:
+            print(f"Failed to load blockchain: {e}")
+            return False
+        
+
     def to_dict(self) ->list:
         return [block.to_dict() for block in self.chain]
     
@@ -130,12 +144,7 @@ class Blockchain:
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
-        if(self.verify_blockchain):
-            with open(f"{self.name}.json", 'w') as f:
-                json.dump(self.to_dict(), f, indent = 4)
-                print("Blockchain Verified!")
-        else:
-            print("Blockchain incorrect!")
+        self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
@@ -144,13 +153,21 @@ class Blockchain:
             return True
         return False
     
-    def verify_blockchain(self) -> bool:
-        for i in range(1, len(self.chain)):
+    def verify_blockchain(self):
+        for i in range(2, len(self.chain)):
             if self.valid_proof(self[i-1], self[i-1].nonce)[1] != self[i].hash:
                 raise ValueError("Invalid blockchain: hash does not match!")
-                return False
-        print("BLOCKCHAIN VERIFIED AND OPENED!")
-        return True
+            else:
+                print("BLOCKCHAIN VERIFIED AND OPENED!")
+                # print("Invalid blockchain: hash does not match!")
+            # for transaction in self[i].data.transaction:
+            #     sender = User(self.chain.block.data.transaction.sender_name, self)
+            #     if sender.amount < transaction['amount']:
+            #         raise ValueError("Invalid blockchain: sender does not have enough balance for transaction!")
+            #         return False
+    def save_blockchain(self):
+        with open(self.file_path, 'w') as f:
+                json.dump(self.to_dict(), f, indent = 4)
 
 
 class User:
@@ -159,6 +176,9 @@ class User:
         self.blockchain = blockchain
         self.amount = self.get_balance()
         self.public_key, self._private_key = rsa.newkeys(512)
+
+    def __str__(self):
+        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User Balance: {self.amount}"
 
     def get_balance(self):
         balance = 0
@@ -196,21 +216,14 @@ class User:
 
 
 if __name__ == "__main__":
-    xite_blockchain = Blockchain("xite_blockchain")
-    # test_blockchain.create_genesis_block()
+    xite_blockchain = Blockchain("xite_blockchain_1")
+    xite_blockchain.load_blockchain()
+    xite_blockchain.verify_blockchain()
+    # xite_blockchain.create_genesis_block()
     # print(test_blockchain[0])
 
-    # Jason = User("Jason", 200, test_blockchain)
-    # Mones = User("Mones", 825, test_blockchain)
-    # Jordi = User("Jordi", 10000, test_blockchain)
-
-
-    # print(Jason.transaction(Mones, 1000))
-    # print(Jordi.transaction(Jason, 2632))
-    # List of user names
     users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
 
-    # Generate random transactions
     # for _ in range(10):
     #     sender = random.choice(users)
     #     recipient = random.choice(users)
@@ -221,22 +234,32 @@ if __name__ == "__main__":
     #     recipient_user = User(recipient, amount2, test_blockchain)
     #     sender_user.transaction(recipient_user, amount3)
 
-    # print(Jason.amount)
-    # print(Mones.amount)
     Alice = User("Alice", xite_blockchain)
     Bob = User("Bob", xite_blockchain)
     Charlie = User("Charlie", xite_blockchain)
     Dave = User("Dave", xite_blockchain)
-    Eve = User("Eve", xite_blockchain)
+    # Eve = User("Eve", xite_blockchain)
 
-    print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
+    # Dave.transaction(Eve, 0)
+    # Eve.transaction(Bob, 0)
+    # Alice.transaction(Charlie, 0)
+
+    # xite_blockchain.save_blockchain()
+
+
+    # print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
 
     print(xite_blockchain)
 
-#user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
+#TODO: user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
-#TODO: implement server based or peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
+#TODO: implement server based or peer to peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
 #TODO: implement a wallet class to store the public and private keys of the user.
 
 #TODO: store the blockchain in a file of sort, and make a user system where i (a user) can log into my wallet and mine blocks to somehow gather $XITE (fake money for now as an int somewhere)
 #TODO: make it so that $XITE cant just be given to a user, like how we are giving currently to user objects. 
+
+#MINING IMPLEMENTATION:
+# For normal transaction anybody can do a transaction and it will be added to a block.
+# A function will be recurring once every 1-2 min and hashing the transactions into the blockchain with each block
+# for using that function to hash blocks into the blockchain, there will be a reward!
