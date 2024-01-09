@@ -14,23 +14,21 @@
 # transactions, and to sign them.
 
 #*  XITECOIN IMPLEMENTATION (WORKING):
-#*  
-#*
+#*  Difficulity (DIFFICULITY) of set for the whole blockchain instead of one block separately.
+#*  Each block has a single transaction (Will later update to multiple transactions in a single block with seperate difficulity of each block)
 #*
 #*
 
-import os
 from datetime import datetime
 import hashlib
 import json
-from os import error
-from textwrap import indent
-# from multiprocessing import pool
 import rsa
 import random
 
 DIFFICULITY = 4
 HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
+TOTAL_COINS  = 2000
+BLOCK_REWARD = 2.5
 
 class Data:
     def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
@@ -65,38 +63,20 @@ class Block:
             'nonce': self.nonce,
         }
 
-    @staticmethod
-    def load(filename):
-        with open(filename, 'r') as f:
-            return json.load(f)
-
-
     def hash_block(self) -> str:
         if HASH_WITHOUT_TIMESTAMP:
-            data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}"
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}"
+            # print("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
-            data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}{self.data.timestamp}"
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}"
             return hashlib.sha256(data_string.encode()).hexdigest()
         
 class Blockchain:
     def __init__(self, name: str):
-        #GENESIS BLOCK CREATION: 
-
         self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
-
-        # if not self.load_blockchain():
-        #     raise ValueError("Failed to load blockchain!")
-        # self.verify_blockchain()
-            # print("Correct Blockchain!")
-            # print("Please use the correct blockchain! OR Blockchain doesnt exists")
-            # first_hash = "xite"
-            # first_nonce = 32
-            # data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block") # type: ignore
-            # genesis_block = Block(first_hash, data, first_nonce)
-            # self.add_block(genesis_block)
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]
@@ -122,6 +102,7 @@ class Blockchain:
                 data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                 # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
                 new_block = Block(data, block['nonce'])
+                new_block.hash = new_block.hash_block()
                 if len(self.chain) > 0:
                     new_block.prev_hash = self.chain[-1].hash
                 self.chain.append(new_block)
@@ -137,7 +118,7 @@ class Blockchain:
     
 
     def create_genesis_block(self):
-        first_prev_hash = "etix"
+        first_prev_hash = ""
         first_hash = "xite"
         first_nonce = 32
         data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
@@ -166,7 +147,6 @@ class Blockchain:
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
-        # self.save_blockchain()
 
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
@@ -174,8 +154,6 @@ class Blockchain:
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
             return True
         return False
-    
-    # def new_proof_of_work_generate(self, )
 
     def verify_PoW_singlePass(self, block) -> bool:
         guess = f"{block.hash}{block.nonce}".encode()
@@ -192,13 +170,8 @@ class Blockchain:
             if not self.verify_PoW_singlePass(self.chain[block]):
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
-                print("BLOCKCHAIN VERIFIED AND OPENED!")
-                # print("Invalid blockchain: hash does not match!")
-            # for transaction in self[i].data.transaction:
-            #     sender = User(self.chain.block.data.transaction.sender_name, self)
-            #     if sender.amount < transaction['amount']:
-            #         raise ValueError("Invalid blockchain: sender does not have enough balance for transaction!")
-            #         return False
+                print("BLOCK VERIFIED!")
+
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
@@ -248,6 +221,10 @@ class User:
             print("Transaction was not able to be verified!")
         return transaction_data
 
+    def mine_block(self):
+        pass
+        # User this later for listening and broadcasting the blocks after mining from socket
+        
 
 if __name__ == "__main__":
     xite_blockchain = Blockchain("xite_blockchain_1")
