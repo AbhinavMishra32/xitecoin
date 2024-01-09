@@ -79,12 +79,6 @@ class Block:
             data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}{self.data.timestamp}"
             return hashlib.sha256(data_string.encode()).hexdigest()
         
-    
-    def hash_block_verify(self) ->str:
-        data_string = f"{self.data.sender.name}{self.data.recipient.name}{self.data.amount}"
-        return hashlib.sha256(data_string.encode()).hexdigest()
-
-
 class Blockchain:
     def __init__(self, name: str):
         #GENESIS BLOCK CREATION: 
@@ -119,6 +113,7 @@ class Blockchain:
     
     def load_blockchain(self) -> bool:
         try:
+            self.chain = []
             with open(self.file_path, 'r') as f:
                     blockchain_data = json.load(f)
             for block in blockchain_data:
@@ -127,6 +122,8 @@ class Blockchain:
                 data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                 # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
                 new_block = Block(data, block['nonce'])
+                if len(self.chain) > 0:
+                    new_block.prev_hash = self.chain[-1].hash
                 self.chain.append(new_block)
                 # print(f"LOADED BLOCK: {block}")
             return True
@@ -140,11 +137,13 @@ class Blockchain:
     
 
     def create_genesis_block(self):
-        # first_prev_hash = "etix"
-        # first_hash = "xite"
+        first_prev_hash = "etix"
+        first_hash = "xite"
         first_nonce = 32
         data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
         genesis_block = Block(data, first_nonce)
+        genesis_block.prev_hash = first_prev_hash
+        genesis_block.hash = first_hash
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
@@ -162,12 +161,8 @@ class Blockchain:
         return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
 
     def add_block(self, block: 'Block'):
-        # for _ in range(1, len(self.chain)):
-        #     self.chain[_].prev_hash = self.chain[_-1].hash
         if len(self.chain) > 0:
             block.prev_hash = self.chain[-1].hash
-        else:
-            block.prev_hash = None  # type: ignore
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
@@ -193,8 +188,8 @@ class Blockchain:
 
 
     def verify_blockchain(self):
-        for i in range(2, len(self.chain)):
-            if not self.verify_PoW_singlePass(self.chain):
+        for block in range(1, len(self.chain)):
+            if not self.verify_PoW_singlePass(self.chain[block]):
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
                 print("BLOCKCHAIN VERIFIED AND OPENED!")
