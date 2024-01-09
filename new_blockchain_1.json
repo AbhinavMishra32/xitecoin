@@ -1,24 +1,50 @@
 [
     {
-        "hash": "xite",
+        "prev_hash": "",
+        "hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
         "data": {
             "sender_name": "Genesis",
             "recipient_name": "Genesis",
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "08/01/2024 22:55:31",
+        "timestamp": "09/01/2024 18:20:29",
         "nonce": 32
     },
     {
-        "hash": "fa5ae1586bb58c9f6d7ec38965f7ec23ea5312987ff63316bf01387562b2555a",
+        "prev_hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
+        "hash": "b9ba8d4caa704b749f02eb42fd9004c82bc4b0a779a767a78784c7ec9527fab0",
+        "data": {
+            "sender_name": "Raju",
+            "recipient_name": "Banti",
+            "amount": 0,
+            "message": "Raju gave Banti 0 $XITE"
+        },
+        "timestamp": "09/01/2024 18:20:29",
+        "nonce": 92710
+    },
+    {
+        "prev_hash": "b9ba8d4caa704b749f02eb42fd9004c82bc4b0a779a767a78784c7ec9527fab0",
+        "hash": "bb60b6a90946ace33dfd2e9c90701a04a7597cd7af90ac8393bd3cb72f925d92",
         "data": {
             "sender_name": "Banti",
             "recipient_name": "Rinki",
             "amount": 0,
             "message": "Banti gave Rinki 0 $XITE"
         },
-        "timestamp": "08/01/2024 22:55:31",
-        "nonce": 15687
+        "timestamp": "09/01/2024 18:20:33",
+        "nonce": 166965
+    },
+    {
+        "prev_hash": "bb60b6a90946ace33dfd2e9c90701a04a7597cd7af90ac8393bd3cb72f925d92",
+        "hash": "0142794c695382f0cbe3f3310d832dec2c921ddd455c999b9103ea9599216591",
+        "data": {
+            "sender_name": "Rinki",
+            "recipient_name": "Raju",
+            "amount": 0,
+            "message": "Rinki gave Raju 0 $XITE"
+        },
+        "timestamp": "09/01/2024 18:20:40",
+        "nonce": 33489
     }
 ]

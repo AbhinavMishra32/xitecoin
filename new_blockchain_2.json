@@ -1,0 +1,26 @@
+[
+    {
+        "prev_hash": "",
+        "hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
+        "data": {
+            "sender_name": "Genesis",
+            "recipient_name": "Genesis",
+            "amount": 0,
+            "message": "Genesis Block"
+        },
+        "timestamp": "09/01/2024 18:11:50",
+        "nonce": 32
+    },
+    {
+        "prev_hash": "cffe299e9551896151c8dd9c035f3ac197b3ebc7e480cc054d54a3c5ed355cec",
+        "hash": "bb60b6a90946ace33dfd2e9c90701a04a7597cd7af90ac8393bd3cb72f925d92",
+        "data": {
+            "sender_name": "Banti",
+            "recipient_name": "Rinki",
+            "amount": 0,
+            "message": "Banti gave Rinki 0 $XITE"
+        },
+        "timestamp": "09/01/2024 18:11:50",
+        "nonce": 166965
+    }
+]
