@@ -27,7 +27,6 @@ import random
 
 DIFFICULITY = 4
 HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
-TOTAL_COINS  = 2000
 BLOCK_REWARD = 2.5
 
 class Data:
@@ -166,11 +165,14 @@ class Blockchain:
 
 
     def verify_blockchain(self):
+        i = 0
+        print("VERIFYING BLOCKCHAIN: ")
         for block in range(1, len(self.chain)):
             if not self.verify_PoW_singlePass(self.chain[block]):
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
-                print("BLOCK VERIFIED!")
+                print(f"BLOCK [{i}] VERIFIED!")
+                i += 1
 
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
@@ -227,40 +229,7 @@ class User:
         
 
 if __name__ == "__main__":
-    xite_blockchain = Blockchain("xite_blockchain_1")
-    # xite_blockchain.load_blockchain()
-    # xite_blockchain.verify_blockchain()
-    xite_blockchain.create_genesis_block()
-    # print(test_blockchain[0])
-
-    users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
-
-    # for _ in range(10):
-    #     sender = random.choice(users)
-    #     recipient = random.choice(users)
-    #     amount1 = random.randint(1, 1000)
-    #     amount2 = random.randint(1, 1000)
-    #     amount3 = random.randint(1, 300)
-    #     sender_user = User(sender, amount1, test_blockchain)
-    #     recipient_user = User(recipient, amount2, test_blockchain)
-    #     sender_user.transaction(recipient_user, amount3)
-
-    Alice = User("Alice", xite_blockchain)
-    Bob = User("Bob", xite_blockchain)
-    Charlie = User("Charlie", xite_blockchain)
-    Dave = User("Dave", xite_blockchain)
-    Eve = User("Eve", xite_blockchain)
-
-    Dave.transaction(Eve, 0)
-    Eve.transaction(Bob, 0)
-    Alice.transaction(Charlie, 0)
-
-    xite_blockchain.save_blockchain()
-
-
-    # print([Alice.amount, Bob.amount, Charlie.amount, Dave.amount, Eve.amount])
-
-    print(xite_blockchain)
+    pass
 
 #TODO: user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
@@ -276,6 +245,21 @@ if __name__ == "__main__":
 # for using that function to hash blocks into the blockchain, there will be a reward!
     
 
-#NEW IMPLEMENTATION;
-    # Each block has hash of previous block. This links blocks together.
-    # NONCE: What's nonce: (Number Used Once) its a value which when added with hash of previous block creates 0000 as starting values of the hash of previous block.
+#MINING IMPLEMENTATION (SOCKET:
+    # Each transaction when occurs is broadcasted to other users.
+
+    # For mining: Collect transactions and then find the proof of work for that block (DIFFICULITY amount of zeroes 
+    # at the beginning of the hash), when you find the POW then you get a BLOCK_REWARD amount of coins. Users are insentivised 
+    # to include as much transactions as possible as they will get transaction fees as reward from each transaction. if there are 
+    # no transcation (dead blockchain) in each block then the user mining that block will get less reward as there will be no transaction 
+    # fees to be collected from each transaction
+
+"""
+When a new transaction occurs, it gets broadcast, each user listens for transactions, then a new block is made by that user after a certain amount of time(BLOCK_TIME).
+The amount of transactions that were listened by the user gets added to the block and then the proof of work for that block is found. when found the 
+
+
+
+
+
+"""

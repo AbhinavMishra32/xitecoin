@@ -16,15 +16,15 @@ Raju = User("Raju", new_blockchain)
 
 
 
-users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
+# users = ["Alice", "Bob", "Charlie", "Dave", "Eve"]
 
-for _ in range(10):
-    sender = random.choice(users)
-    recipient = random.choice(users)
-    sender_user = User(sender, new_blockchain)
-    recipient_user = User(recipient, new_blockchain)
-    sender_user.transaction(recipient_user, 0)
+# for _ in range(10):
+#     sender = random.choice(users)
+#     recipient = random.choice(users)
+#     sender_user = User(sender, new_blockchain)
+#     recipient_user = User(recipient, new_blockchain)
+#     sender_user.transaction(recipient_user, 0)
 
-new_blockchain.save_blockchain()
+# new_blockchain.save_blockchain()
 
 print(new_blockchain)
