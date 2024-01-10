@@ -28,7 +28,10 @@
 
 # send(DISCONNECT_MESSAGE)
 
+from re import I
 import socket
+import json
+
 
 HOST = socket.gethostbyname(socket.gethostname())
 PORT = 5050
@@ -36,7 +39,23 @@ PORT = 5050
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket.connect((HOST, PORT))
 
-input = input(str("Enter message: "))
+data = {"key": "value"}
+def send_text():
+    user_input = ""
+    while(user_input != "STOP"):
+        user_input = input("Enter message: ")
+        socket.send(user_input.encode('utf-8'))
+        print(socket.recv(1024).decode('utf-8'))
 
-socket.send("Hello World!".encode('utf-8'))
-print(socket.recv(1024).decode('utf-8'))
+
+def send_json():
+    user_input = ""
+    while(user_input != "STOP"):
+        json_data = json.dumps(data)
+        socket.send(json_data.encode('utf-8'))
+        response = socket.recv(1024)
+        # print(json.loads(response.decode('utf-8')))
+        print(socket.recv(1024).decode('utf-8')) 
+
+# send_text()
+send_json()

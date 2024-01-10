@@ -40,6 +40,7 @@
 # print("[STARTING] server is starting...")
 # start()
 import socket
+import json
 
 HOST = socket.gethostbyname(socket.gethostname())
 PORT = 5050
@@ -52,8 +53,21 @@ server.listen(5)
 while True:
     communication_socket, address = server.accept()
     print(f"Connected to: {address}")
-    message = communication_socket.recv(1024).decode('utf-8')
-    print(f"Message from client is: {message}")
-    communication_socket.send(f"Got you message! Thank you!".encode('utf-8'))
-    # communication_socket.close()
-    print(f"Connection with {address} ended!")
+    while True:
+        # message = communication_socket.recv(1024).decode('utf-8')
+        # json_file =json.loads(communication_socket.recv(1024).decode('utf-8'))
+        data = communication_socket.recv(1024).decode('utf-8')
+        if data:
+            try:
+                json_file = json.loads(data)
+                print(f"JSON RECEIVED: {json_file}")
+            except json.JSONDecodeError:
+                print(f"Message from client is: {data}")
+        else:
+            print("No data received")
+        # if message == "STOP":
+        #     communication_socket.close()
+        #     print(f"Connection with {address} ended!")
+        # print(f"Message from client is: {message}")
+        communication_socket.send(f"Got you message! Thank you!".encode('utf-8'))
+
