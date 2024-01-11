@@ -14,6 +14,7 @@ FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
 known_nodes = ['localhost:3000']
+print("Server starting...")
 def handle_client(conn, addr):
 	global known_nodes
 	data = conn.recv(1024)
@@ -24,7 +25,7 @@ def handle_client(conn, addr):
 def start_server():
 	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	server.bind(('localhost', PORT))
+	server.bind(ADDR)
 	server.listen()
 	while True:
 		conn, addr = server.accept()

@@ -4,8 +4,6 @@ import threading
 import json
 import time
 
-from client import HOST, PORT
-
 
 class Peer:
     def __init__(self, host, port):
@@ -45,7 +43,8 @@ class Peer:
         listen_thread.start()
 
 
-
-local_peer = Peer('localhost', 5000)
-
-local_peer.start()
+if __name__ == "__main__":
+    import sys
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
+    peer = Peer('0.0.0.0', port)
+    peer.start()
