@@ -4,6 +4,8 @@ import threading
 import json
 import time
 
+from client import HOST, PORT
+
 
 class Peer:
     def __init__(self, host, port):
@@ -20,14 +22,16 @@ class Peer:
             print(f"Failed to connect to: {peer_host}, {peer_port}. Error: {e}")
     
     def listen(self):
-        self.socket.bind((self.host, self.port))
-        self.socket.listen(10)        
-        print(f"Listening for connections on {self.host}:{self.port}")
-
-        while True:
-            connection, address = self.socket.accept()
-            self.connections.append(connection)
-            print(f"Accepted connection from {address}")
+        try:
+            self.socket.bind((self.host, self.port))
+            self.socket.listen(10)        
+            print(f"Listening for connections on {self.host}:{self.port}")
+            while True:
+                connection, address = self.socket.accept()
+                self.connections.append(connection)
+                print(f"Accepted connection from {address}")
+        except Exception as e:
+            print(f"Exception in listen thread: {e}")
 
     def send_data(self, data):
         for connection in self.connections:
@@ -40,3 +44,8 @@ class Peer:
         listen_thread = threading.Thread(target = self.listen)
         listen_thread.start()
 
+
+
+local_peer = Peer('localhost', 5000)
+
+local_peer.start()

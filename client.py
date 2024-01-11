@@ -34,7 +34,7 @@ import json
 
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 5050
+PORT = 5000
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 socket.connect((HOST, PORT))
