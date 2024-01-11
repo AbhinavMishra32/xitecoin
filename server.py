@@ -1,41 +1,45 @@
+from http import server
 import socket
 import threading
+import json
+import time
 
 HEADER = 64
-PORT = 5050
+PORT = 5000
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind(ADDR)
-
-
+known_nodes = ['localhost:5000']
 def handle_client(conn, addr):
-    print(f"[NEW CONNECTION] {addr} connected.")
-    connected = True
-    while connected:
-        msg_length = conn.recv(HEADER).decode(FORMAT)
-        if msg_length:
-            msg_length = int(msg_length)
-            msg = conn.recv(msg_length).decode(FORMAT)
-            if msg == DISCONNECT_MESSAGE:
-                conncted = False
+	global known_nodes
+	data = conn.recv(1024)
+	nodes = json.loads(data)
+	known_nodes += [node for node in nodes if node not in known_nodes]
+	print(f"Updated nodes: {known_nodes}")
 
-            print(f"[{addr}] {msg}")
-    conn.close()
+def start_server():
+	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server.bind(('localhost', PORT))
+	server.listen()
+	while True:
+		conn, addr = server.accept()
+		handle_client(conn, addr)
+		
+def connect_to_node(node):
+    global known_nodes
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    host, port = node.split(':')
+    client.connect((host, int(port)))
+    data = json.dumps(known_nodes).encode(FORMAT)
+    client.send(data)
 
+server_thread = threading.Thread(target = start_server)
+server_thread.start()
 
-def start():
-    server.listen()
-    print(f"[LISTENING] Server is listening on {SERVER}")
-    while True:
-        conn, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f"[ACTIVE CONNECTIONS] {threading.active_count() - 1}")
+# time.sleep(1)
 
-
-print("[STARTING] server is starting...")
-start()
+# connect_to_node('localhost:5000')
+for node in known_nodes:
+	connect_to_node(node)
