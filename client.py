@@ -34,10 +34,10 @@ import json
 
 
 HOST = socket.gethostbyname(socket.gethostname())
-PORT = 5000
+PORT = 3000
 
 socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-socket.connect((HOST, PORT))
+socket.connect(('localhost', PORT))
 
 data = {"key": "value"}
 def send_text():
