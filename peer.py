@@ -38,9 +38,12 @@ class Peer:
             except socket.error as e:
                 print(f"Failed to send data. Error: {e}")
             
-    def start(self):
+    def start(self, peers=[]):
         listen_thread = threading.Thread(target = self.listen)
         listen_thread.start()
+
+        for peer in peers:
+            self.connect(*peer)
 
 
 # if __name__ == "__main__":
