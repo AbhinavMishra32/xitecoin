@@ -4,8 +4,6 @@ import threading
 import json
 import time
 
-from client import HOST
-
 HEADER = 64
 PORT = 3000
 SERVER = socket.gethostbyname(socket.gethostname())

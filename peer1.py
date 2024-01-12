@@ -1,24 +1,22 @@
-from http import server
 import socket
 import threading
-import json
-import time
 
-
-class Peer:
+class Peer1:
     def __init__(self, host, port):
         self.host = host	
         self.port = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connections = []
+        self.peers = []
 
     def connect(self, peer_host, peer_port):
         try:
             connection = self.socket.connect((peer_host, peer_port))
             self.connections.append(connection)
+            self.peers.append((peer_host, peer_port))
         except socket.error as e:
             print(f"Failed to connect to: {peer_host}, {peer_port}. Error: {e}")
-    
+
     def listen(self):
         try:
             self.socket.bind((self.host, self.port))
@@ -28,25 +26,28 @@ class Peer:
                 connection, address = self.socket.accept()
                 self.connections.append(connection)
                 print(f"Accepted connection from {address}")
+                threading.Thread(target=self.handle_connection, args=(connection,)).start()
         except Exception as e:
             print(f"Exception in listen thread: {e}")
 
-    def send_data(self, data):
+    def handle_connection(self, connection):
+        while True:
+            data = connection.recv(1024)
+            if not data:
+                break
+            print(f"Received data: {data}")
+            self.broadcast_data(data)
+
+    def broadcast_data(self, data):
         for connection in self.connections:
             try:
-                connection.sendall(data.encode())
+                connection.sendall(data)
             except socket.error as e:
                 print(f"Failed to send data. Error: {e}")
-            
+
     def start(self):
-        listen_thread = threading.Thread(target = self.listen)
+        listen_thread = threading.Thread(target=self.listen)
         listen_thread.start()
 
-
-# if __name__ == "__main__":
-#     import sys
-#     port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
-#     peer = Peer('0.0.0.0', port)
-#     peer.start()
-peer1 = Peer('localhost', 3000)
-peer1.start()
+peer = Peer1('localhost', 3000)
+peer.start()
