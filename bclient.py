@@ -12,13 +12,23 @@ class BClient():
 		self.client.connect(ADDR)
 
 	def send_data(self):
-		# data = json.loads(json.dumps({"test": "message"}))
-		# self.client.sendall()
+		data = json.dumps({"test": "message"}).encode()
+		self.client.send(data)
 		pass
 	
 	def recieve_msg(self):
-		data = json.loads(self.client.recv(1024).decode('utf-8'))
-		print(f"Data recieved from server: {data}")
+		self.active_clients = json.loads(self.client.recv(1024).decode('utf-8'))
+		print(f"Data recieved from server: {self.active_clients}")
+
+	def connect_to_peers(self):
+		for peer in self.active_clients:
+			ip, port = peer['ip'], peer['port']
+
+			s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			s.connect((ip, port))
+
+		
 
 peer = BClient()
+peer.send_data()
 peer.recieve_msg()
