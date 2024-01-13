@@ -231,13 +231,13 @@ class User:
 if __name__ == "__main__":
     pass
 
-#TODO: user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
+#TODO:(done) user makes a seperate private and public key for each transaction, then the transaction has a signature to it. that signature was only created by the user. the next block checks the transaction by verifying by public key
 
 #TODO: implement server based or peer to peer based blockchain network, which verifies the most work done in a blockchain and only the most work done blockchain is accepted.
 #TODO: implement a wallet class to store the public and private keys of the user.
 
 #TODO: store the blockchain in a file of sort, and make a user system where i (a user) can log into my wallet and mine blocks to somehow gather $XITE (fake money for now as an int somewhere)
-#TODO: make it so that $XITE cant just be given to a user, like how we are giving currently to user objects. 
+#TODO:(done) make it so that $XITE cant just be given to a user, like how we are giving currently to user objects. 
 
 #MINING IMPLEMENTATION:
 # For normal transaction anybody can do a transaction and it will be added to a block.

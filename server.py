@@ -5,13 +5,13 @@ import json
 import time
 
 HEADER = 64
-PORT = 3000
+PORT = 12345
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = "utf-8"
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
-known_nodes = ['localhost:3000']
+known_nodes = ['localhost:12345']
 print("Server starting...")
 def handle_client(conn, addr):
 	global known_nodes
