@@ -17,4 +17,8 @@ class BClient():
 		pass
 	
 	def recieve_msg(self):
-		self.client.
+		data = json.loads(self.client.recv(1024).decode('utf-8'))
+		print(f"Data recieved from server: {data}")
+
+peer = BClient()
+peer.recieve_msg()
