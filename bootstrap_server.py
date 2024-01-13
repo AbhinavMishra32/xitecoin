@@ -10,13 +10,13 @@ import socket
 import json
 import threading
 
-HOST = "192.168.29.241"
+# HOST = "192.168.29.241"
+HOST = socket.gethostbyname(socket.gethostname())
 PORT = 12345
 
 class BServer():
 	def __init__(self, host, port):
 		self.active_peers = []
-		self.active_peers_adrs = []
 		self.host = host
 		self.port = port
 
@@ -24,30 +24,36 @@ class BServer():
 		for client in self.active_peers:
 			client.sendall(message.encode())
 
+	def handle_user_commands(self, client, address):
+		msg = client.recv(1024).decode()
+		match msg:
+			case "CLOSE":
+				print(f"Connection closed by: {address}")
+				for _ in self.active_peers:
+					if _["ip"] == address[0]:
+						self.active_peers.remove(address)
+				client.close()
+
 	def handle_client(self, client: socket.socket, address):
+		self.handle_user_commands(client, address)
 		try:	
 			print(f"Handling client: {address}")
 			while True:
 				client.send(json.dumps(self.active_peers).encode())
 				data = json.loads(client.recv(1024))
-				if not data:
-					print(f"Connection closed by: {address}")
-					self.active_peers.remove(address)
-					client.close()
-					break
 				print(f"Recieved data from {address}: {data}")
 		except Exception as e:
 			print(f"Error occured (From handle_client): {e}")
 
 	def start(self):
 		try:
-			server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			server.bind((self.host, self.port))
-			server.listen()
+			self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			self.server.bind((self.host, self.port))
+			self.server.listen()
 			print(f"Server started on {self.host}:{self.port}")
 			while True:
-				client, address = server.accept()
+				client, address = self.server.accept()
 				new_client = {"ip": address[0], "port": address[1]}
 				print(self.active_peers)
 				if new_client["ip"] not in [x["ip"] for x in self.active_peers]:
