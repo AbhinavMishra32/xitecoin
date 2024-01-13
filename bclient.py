@@ -2,9 +2,9 @@ import socket
 import json
 import threading
 
-HOST = socket.gethostbyname(socket.gethostname()) #this is the bootstrap server's ip
+HOST = "192.168.29.241" #this is the bootstrap server's ip
 PORT = 12345
-ADDR = ("HOST", PORT)
+ADDR = (HOST, PORT)
 
 class BClient():
 	def __init__(self):
