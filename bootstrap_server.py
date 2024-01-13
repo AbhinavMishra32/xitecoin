@@ -25,7 +25,8 @@ class BServer():
 			client.sendall(message.encode())
 
 	def handle_user_commands(self, client, address):
-		msg = client.recv(1024).decode()
+		msg = client.recv(1024).decode('utf-8')
+		print(msg)
 		match msg:
 			case "CLOSE":
 				print(f"Connection closed by: {address}")
@@ -33,13 +34,15 @@ class BServer():
 					if _["ip"] == address[0]:
 						self.active_peers.remove(address)
 				client.close()
+			case _:
+				return msg
 
 	def handle_client(self, client: socket.socket, address):
-		self.handle_user_commands(client, address)
 		try:	
 			print(f"Handling client: {address}")
 			while True:
 				client.send(json.dumps(self.active_peers).encode())
+				self.handle_user_commands(client, address)
 				data = json.loads(client.recv(1024))
 				print(f"Recieved data from {address}: {data}")
 		except Exception as e:
@@ -55,7 +58,7 @@ class BServer():
 			while True:
 				client, address = self.server.accept()
 				new_client = {"ip": address[0], "port": address[1]}
-				print(self.active_peers)
+				# print(self.active_peers)
 				if new_client["ip"] not in [x["ip"] for x in self.active_peers]:
 					self.active_peers.append(new_client)
 				else:
