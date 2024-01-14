@@ -14,4 +14,4 @@ ADD . /app
 EXPOSE 5000
 
 # Run peer.py when the container launches
-CMD ["python", "peer.py"]
+# CMD ["python", "peer.py"]
