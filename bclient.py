@@ -47,6 +47,6 @@ class BClient():
 if __name__ == "__main__":
 	peer = BClient()
 	peer.recieve_msg()
-	# peer.connect_to_peers()
+	peer.connect_to_peers()
 	# peer.disc_bserv()
 	# peer.recieve_msg()
