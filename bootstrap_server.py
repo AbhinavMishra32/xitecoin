@@ -11,8 +11,8 @@ import json
 import threading
 
 # HOST = "192.168.29.241"
-# HOST = socket.gethostbyname(socket.gethostname())
-HOST = "localhost"
+HOST = socket.gethostbyname("hpLaptop.local")
+# HOST = "localhost"
 PORT = 12345
 
 class BServer():

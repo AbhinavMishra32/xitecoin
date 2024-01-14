@@ -3,8 +3,7 @@ import json
 import threading
 
 # HOST = "192.168.29.241" #this is the bootstrap server's ip
-# HOST = socket.gethostbyname(socket.gethostname())
-HOST = "hpLaptop.local"
+HOST = socket.gethostbyname("hpLaptop.local")
 PORT = 12345
 ADDR = (HOST, PORT)
 
@@ -34,6 +33,8 @@ class BClient():
 		for peer in self.active_clients:
 			try:
 				ip = peer.get('ip')
+				if ip == HOST:
+					continue
 				port = peer.get('port')
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((ip, port))
