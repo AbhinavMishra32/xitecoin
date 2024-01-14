@@ -9,8 +9,11 @@ ADDR = (HOST, PORT)
 
 class BClient():
 	def __init__(self):
-		self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.client.connect(ADDR)
+		try:
+			self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			self.client.connect(ADDR)
+		except Exception as e:
+			print(f"Error occured: {e}")
 
 	def send_data(self):
 		data = json.dumps({"test": "message"}).encode()
@@ -41,10 +44,9 @@ class BClient():
 				print(f"Error while connecting to peers: {e}")
 
 
-		
 if __name__ == "__main__":
 	peer = BClient()
 	peer.recieve_msg()
-	peer.connect_to_peers()
+	# peer.connect_to_peers()
 	# peer.disc_bserv()
 	# peer.recieve_msg()
