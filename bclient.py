@@ -55,7 +55,8 @@ class BClient():
 				ip = peer.get('ip')
 				if ip == HOST_BS:
 					continue
-				port = peer.get('port')
+				# port = peer.get('port')
+				port = 12345
 				s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 				s.connect((ip, port))
 				print(f"Connected to {ip}:{port}")
@@ -66,6 +67,7 @@ class BClient():
 
 if __name__ == "__main__":
 	peer = BClient()
+	peer.start_server()
 	peer.recieve_msg()
 	peer.connect_to_peers()
 	# peer.disc_bserv()
