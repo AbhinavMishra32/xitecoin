@@ -2,17 +2,21 @@ import socket
 import json
 import threading
 
-# HOST = "192.168.29.241" #this is the bootstrap server's ip
-HOST_BS = socket.gethostbyname("hpLaptop.local")
+# HOST_BS = "192.168.200.1" #this is the bootstrap server's ip
+HOST_BS = socket.gethostbyname("Abhinavs-Macbook-Air.local")
+# HOST_BS = "localhost"
+# HOST_BS = socket.gethostbyname("HomeComputer.local")
 HOST_CL = socket.gethostbyname(socket.gethostname())
-PORT = 12345
-ADDR = (HOST_BS, PORT)
+PORT_BS = 12345
+PORT_CL = 12346
+ADDR = (HOST_BS, PORT_BS)
 
 class BClient():
 	def __init__(self):
 		try:
 			self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			self.client.connect(ADDR)
+			print("Bootstrap server connected successfully.")
 		except Exception as e:
 			print(f"Error occured: {e}")
 
@@ -30,25 +34,32 @@ class BClient():
 		print(f"Data received from server: {self.active_clients}")
 
 	def start_server(self):
-		def handle_client(conn, addr):
-			if addr == HOST_CL:
-				return
-			print(f"Connected by {addr}")
-			while True:
-				data = conn.recv(1024)
-				if not data:
-					break
-				conn.sendall(data)
-				conn.close()
+		# print("Starting client server")
+		try:
+			def handle_client(conn, addr):
+				if addr[0] == HOST_CL:
+					return
+				print(f"Connected by {addr}")
+				while True:
+					data = conn.recv(1024)
+					if not data:
+						break
+					conn.sendall(data)
+					conn.close()
+		except Exception as e:
+			print(f"Error occured: {e}")
 
 		def server_thread():
-			server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			server.bind((HOST_CL, PORT))
-			server.listen()
-			print(f"Server started on {HOST_CL}:{PORT}")
-			while True:
-				conn, addr = server.accept()
-				threading.Thread(target=handle_client, args = (conn, addr)).start()
+			try:
+				server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				server.bind((HOST_CL, PORT_BS))
+				server.listen()
+				print(f"Server started on {HOST_CL}:{PORT_BS}")
+				while True:
+					conn, addr = server.accept()
+					threading.Thread(target=handle_client, args = (conn, addr)).start()
+			except Exception as e:
+				print(f"Error occured: {e}")
 		threading.Thread(target = server_thread).start()
 
 	def connect_to_peers(self):
@@ -73,4 +84,4 @@ if __name__ == "__main__":
 	peer.recieve_msg()
 	peer.connect_to_peers()
 	# peer.disc_bserv()
-	# peer.recieve_msg()
+	peer.recieve_msg()
