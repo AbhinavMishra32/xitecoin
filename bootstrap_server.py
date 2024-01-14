@@ -11,7 +11,7 @@ import json
 import threading
 
 # HOST = "192.168.29.241"
-HOST = socket.gethostbyname("HomeComputer")
+HOST = socket.gethostbyname("Abhinavs-Macbook-Air.local")
 # HOST = "localhost"
 PORT = 12345
 
