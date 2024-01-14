@@ -31,7 +31,7 @@ class BClient():
 
 	def start_server(self):
 		def handle_client(conn, addr):
-			if addr == HOST_CL:
+			if addr[0] == HOST_CL:
 				return
 			print(f"Connected by {addr}")
 			while True:
