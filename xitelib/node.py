@@ -16,7 +16,7 @@
 #*  XITECOIN IMPLEMENTATION (WORKING):
 #*  Difficulity (DIFFICULITY) of set for the whole blockchain instead of one block separately.
 #*  Each block has a single transaction (Will later update to multiple transactions in a single block with seperate difficulity of each block)
-#*
+#*  User broadcasts a single block and another user hashes that block and gets reward
 #*
 
 from datetime import datetime
@@ -24,8 +24,11 @@ import hashlib
 import json
 import rsa
 import random
+from ..settings.settings import Settings
 
-DIFFICULITY = 4
+
+DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
+# DIFFICULITY = 4
 HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
 BLOCK_REWARD = 2.5
 
@@ -40,8 +43,6 @@ class Data:
 
     def __str__(self):
         return self.message
-
-
 class Block:
     def __init__(self, data: Data, nonce: int = 0):
         self.prev_hash = ""

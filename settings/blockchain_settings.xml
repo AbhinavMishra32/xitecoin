@@ -1,0 +1,6 @@
+<settings>
+    <blockchain>
+        <name>MyBlockchain</name>
+        <difficulity>4</difficulity>
+    </blockchain>
+</settings>
