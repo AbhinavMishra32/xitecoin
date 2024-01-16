@@ -24,8 +24,11 @@ import hashlib
 import json
 import rsa
 import random
+from ..settings.settings import Settings
 
-DIFFICULITY = 4
+
+DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
+# DIFFICULITY = 4
 HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
 BLOCK_REWARD = 2.5
 
