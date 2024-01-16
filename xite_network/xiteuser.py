@@ -1,4 +1,4 @@
-from xitelib.node import Blockchain, User
+from ..xitelib.node import Blockchain, User
 from ..settings.settings import Settings
 import sqlite3
 
