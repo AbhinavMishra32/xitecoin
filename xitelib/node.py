@@ -16,7 +16,7 @@
 #*  XITECOIN IMPLEMENTATION (WORKING):
 #*  Difficulity (DIFFICULITY) of set for the whole blockchain instead of one block separately.
 #*  Each block has a single transaction (Will later update to multiple transactions in a single block with seperate difficulity of each block)
-#*
+#*  User broadcasts a single block and another user hashes that block and gets reward
 #*
 
 from datetime import datetime
@@ -40,8 +40,6 @@ class Data:
 
     def __str__(self):
         return self.message
-
-
 class Block:
     def __init__(self, data: Data, nonce: int = 0):
         self.prev_hash = ""
