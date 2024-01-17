@@ -1,1 +1,1 @@
-print("Init")
+__all__ = ["xitelib"]
