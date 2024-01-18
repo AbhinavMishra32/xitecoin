@@ -1,5 +1,6 @@
 import socket
 import threading
+from xiteuser import XiteUser
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
@@ -20,7 +21,7 @@ def recieve():
 
 def write():
     while True:
-        message = f"{nickname}: {input("")}"
+        message = f"{nickname}: {input('')}"
         client.send(message.encode())
 
 recieve_thread = threading.Thread(target = recieve)

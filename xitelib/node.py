@@ -188,7 +188,7 @@ class User:
         self.public_key, self._private_key = rsa.newkeys(512)
 
     def __str__(self):
-        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User balance at time of transaction: {self.amount}"
+        return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User balance: {self.amount}"
 
     def get_balance(self):
         balance = 0
