@@ -24,7 +24,7 @@ import hashlib
 import json
 import rsa
 import random
-from ..settings.settings import Settings
+from settings.settings import Settings
 
 
 DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value

@@ -14,8 +14,8 @@ def import_xml_settings(file_path):
     settings = parse_element(root)
     return settings
 
-settings = import_xml_settings('blockchain_settings.xml')
-print(settings)
+settings = import_xml_settings('settings/blockchain_settings.xml')
+
 
 
 class Settings(Enum):
@@ -23,4 +23,6 @@ class Settings(Enum):
     BLOCKCHAIN_DIFFICULITY = int(settings["blockchain"]["difficulity"]) # type: ignore
     
 
-print(Settings.BLOCKCHAIN_NAME.value, Settings.BLOCKCHAIN_DIFFICULITY.value)
+if __name__ == "__main__":
+    print(settings)
+    print(Settings.BLOCKCHAIN_NAME.value, Settings.BLOCKCHAIN_DIFFICULITY.value)
