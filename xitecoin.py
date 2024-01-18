@@ -2,7 +2,8 @@ from xite_network.xiteuser import XiteUser
 from xitelib.node import Blockchain
 
 def create_user():
-    option = input("Does user already exist? [y/n]: ")
+    print("-----Login/Signup-----")
+    option = input("Does the user already exist? [y/n]: ")
     if option == "y":
         try:
             bc_name = str(input("Blockchain name: "))
@@ -24,4 +25,5 @@ def create_user():
         print("Enter the correct option!")
         create_user()
 
-create_user()
+if __name__ == "__main__":
+    create_user()
