@@ -1,10 +1,9 @@
 import socket
 import threading
+from xite_network import xiteuser
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
-
-nickname = input("Choose a nickname: ")
 
 def recieve():
     while True:
@@ -20,7 +19,7 @@ def recieve():
 
 def write():
     while True:
-        message = f"{nickname}: {input("")}"
+        message = f"{nickname}: {input('')}"
         client.send(message.encode())
 
 recieve_thread = threading.Thread(target = recieve)
@@ -28,3 +27,7 @@ recieve_thread.start()
 
 write_thread = threading.Thread(target = write)
 write_thread.start()
+
+if __name__ == "__main__":
+    xiteuser.create_user()
+    nickname = input("Choose a nickname: ")
