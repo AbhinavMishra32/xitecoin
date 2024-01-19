@@ -4,6 +4,10 @@ import sqlite3
 
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
+'''
+this class is used to create a user and store it in the database
+'''
+
 class XiteUser(User):
     def __init__(self, username: str, password: str, blockchain: Blockchain):
         super().__init__(username, blockchain)
@@ -118,8 +122,11 @@ def print_database():
 
     conn.close()
 
+
 if __name__ == "__main__":
     # testUser = XiteUser("abhisnsdfsdf123", "myasp124124", Blockchain("testsetestset"))
     # print(testUser.blockchain)
     print_database()
     print(XiteUser("Abhinav122", "adfs", Blockchain("testsetestset")))
+    print_database()
+
