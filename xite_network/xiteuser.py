@@ -109,7 +109,6 @@ def create_user() -> XiteUser | None:
         print("Enter the correct option!")
         create_user()
 
-
 def print_database():
     conn = sqlite3.connect('users.db')
     c = conn.cursor()
@@ -130,4 +129,4 @@ if __name__ == "__main__":
     print(XiteUser("Abhinav122", "adfs", Blockchain("testsetestset")))
     print_database()
     
-    
+
