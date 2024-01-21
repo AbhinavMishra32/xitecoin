@@ -12,23 +12,26 @@ def recieve():
     while True:
         try:
             message = client.recv(1024).decode()
-            if message == "NICK":
-                client.send(nickname.encode())
-            else:
-                print(message)
+            # if message == "NICK":
+            #     client.send(nickname.encode())
+            # else:
+            #     print(message)
         except Exception as e:
             print(f"Error occurred: {e}")
             break
 
 def write():
     while True:
-        send_message("MESSAGE", input(""))
+        choice = input("Choose an action: ")
+        json_test = json.dumps({"message": "Im sending teh blockchain mf", "sender": client_user.username, "data": "HERE COMES THE BC DATA"})
+        send_message(choice, json_test)
+        # send_message("MESSAGE", input(""))
         # message = f"{nickname}: {input('')}"
         # message = choice
         # client.send(message.encode())
 
 def send_message(action: str, message: str):
-    msg_json = json.dumps({"action": action, "message": message})
+    msg_json = json.dumps({"action": action, "message": message.message, "sender": client_user.username, "data": message.data}) #type: ignore
     client.send(msg_json.encode())
 
 
@@ -42,7 +45,6 @@ if __name__ == "__main__":
 
     tb = Blockchain("tb")
     client_user = XiteUser(username, password, tb)
-    nickname = client_user.username
 
     recieve_thread = threading.Thread(target = recieve)
     recieve_thread.start()

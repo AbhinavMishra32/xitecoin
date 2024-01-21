@@ -1,5 +1,6 @@
 import socket
 import threading
+import json
 
 HOST = "localhost"
 PORT = 12345
@@ -71,9 +72,7 @@ def recieve():
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
-
-        client.send("NICK".encode())
-        nickname  = client.recv(1024).decode()
+        nickname  = json.loads(client.recv(1024).decode())["sender"]
         nicknames.append(nickname)
         clients.append(client)
 
@@ -81,8 +80,7 @@ def recieve():
         broadcast(f"{nickname} joined the chat!".encode())
         client.send("Connected to the server".encode())
 
-        choice = recv_choice(client, "SEND_BC")
-        client.send(choice.encode())
+        choice = json.loads(client.recv(1024).decode())["action"]
 
         thread = threading.Thread(target = handle, args = (client,))
         thread.start()
