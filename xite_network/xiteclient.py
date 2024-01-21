@@ -2,6 +2,7 @@ import socket
 import threading
 from xitelib.node import Blockchain
 from .xiteuser import XiteUser
+import sys
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
@@ -22,12 +23,19 @@ def write():
     while True:
         message = f"{nickname}: {input('')}"
         client.send(message.encode())
-
+    
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python3 xiteclient.py <username> <password>")
+        sys.exit(1)
+    
+    username = sys.argv[1]
+    password = sys.argv[2]
+
     tb = Blockchain("tb")
-    client_user = XiteUser("clientname", "clientpass", tb)
+    client_user = XiteUser(username, password, tb)
     nickname = client_user.username
 
     recieve_thread = threading.Thread(target = recieve)

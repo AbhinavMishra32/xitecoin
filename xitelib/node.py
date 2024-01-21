@@ -164,7 +164,6 @@ class Blockchain:
         else:
             return False
 
-
     def verify_blockchain(self):
         i = 0
         print("VERIFYING BLOCKCHAIN: ")

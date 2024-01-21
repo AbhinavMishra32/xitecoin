@@ -11,6 +11,8 @@ server.listen()
 clients = []
 nicknames = []
 
+
+
 def broadcast(message):
     for client in clients:
         client.send(message)
