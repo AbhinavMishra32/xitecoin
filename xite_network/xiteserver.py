@@ -21,16 +21,24 @@ def broadcast(message):
 def handle(client):
     while True:
         try:
-            message = client.recv(1024)
-            broadcast(message)
+            data_recvd = json.loads(client.recv(2024).decode())
+            print(data_recvd)
+            # handle_choice(client, data_recvd["action"])
+            # message = client.recv(1024)
+            # broadcast(message)
         except:
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            nickname = nicknames[index]
-            broadcast(f"{nickname} left the network".encode())
-            nicknames.remove(nickname)
-            break
+            if client.fileno() == -1:
+                # The client's socket has been closed
+                index = clients.index(client)
+                clients.remove(client)
+                nickname = nicknames[index]
+                broadcast(f"{nickname} left the network".encode())
+                nicknames.remove(nickname)
+                break
+            else:
+                # An exception occurred, but the client's socket is still open
+                # Continue to the next iteration of the loop to try to receive more data
+                continue
 
 def handle_choice(client: socket.socket, choice: str):
     while True:
@@ -72,22 +80,22 @@ def recieve():
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
-        data_recvd = json.loads(client.recv(2024).decode())
-        nickname  = data_recvd["sender"]
-        print(data_recvd)
-        nicknames.append(nickname)
+        # data_recvd = json.loads(client.recv(2024).decode())
+        # nickname  = data_recvd["sender"]
+        # print(data_recvd)
+        # nicknames.append(nickname)
         clients.append(client)
 
-        print(f"Nickname of client is {nickname}")
-        broadcast(f"{nickname} joined the chat!".encode())
+        # print(f"Nickname of client is {nickname}")
+        # broadcast(f"{nickname} joined the chat!".encode())
         client.send("Connected to the server".encode())
 
-        choice = json.loads(client.recv(1024).decode())["action"]
+        # choice = json.loads(client.recv(1024).decode())["action"]
         # handle_choice(client, choice)
         
-        print(data_recvd)
-        print(choice)
-        print("hello")
+        # print(data_recvd)=
+        # print(choice)
+        # print("hello")
         thread = threading.Thread(target = handle, args = (client,))
         thread.start()
 
