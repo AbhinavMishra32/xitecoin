@@ -21,12 +21,26 @@ def recieve():
             print(f"Error occurred: {e}")
             break
 
+def compare_length():
+    pass
+
+def cl_handle_choice(client: socket.socket, choice: str):
+    try:
+        if choice == "SEND_BC":
+            client.send("Ok, send the blockchain".encode())
+        if choice == "MESSAGE":
+            return "MSG_MODE"
+    except Exception as e:
+        print(f"Error occurred: {e}")
+
 def write():
     while True:
-        choice = input("Choose an action: ")
+        choice: str = input("Choose an action: ")
         message: str = input("Enter your message: ")
-        data: str = input("Enter your data: ")
-        json_test = json.dumps({"message": message, "sender": client_user.username, "data": data})
+        data: str = input("Enter array: ")
+        
+        # data = [block.to_dict() for block in client_user.blockchain.chain]
+        json_test = json.dumps({"message": message, "sender": client_user.username, "data": data.split()})
         print(json_test)
         # json_test = json.dumps({"message": "Im sending teh blockchain mf", "sender": client_user.username, "data": "HERE COMES THE BC DATA"})
         send_message(choice, json_test)

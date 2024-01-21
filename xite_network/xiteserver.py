@@ -25,7 +25,7 @@ def handle(client):
             print(data_recvd)
             # handle_choice(client, data_recvd["action"])
             # message = client.recv(1024)
-            # broadcast(message)
+            broadcast(data_recvd)
         except:
             if client.fileno() == -1:
                 # The client's socket has been closed
@@ -41,23 +41,19 @@ def handle(client):
                 continue
 
 def handle_choice(client: socket.socket, choice: str):
-    while True:
-        try:
-            # choice = client.recv(1024).decode()
-            if choice == "SEND_BC":
-                client.send("Ok, send the blockchain".encode())
-            if choice == "MESSAGE":
-                return "MSG_MODE"
-        except:
-            index = clients.index(client)
-            clients.remove(client)
-            client.close()
-            nickname = nicknames[index]
-            broadcast(f"{nickname} left the network".encode())
-            nicknames.remove(nickname)
-            break
-
-
+    try:
+        # choice = client.recv(1024).decode()
+        if choice == "SEND_BC":
+            client.send("Ok, send the blockchain".encode())
+        if choice == "MESSAGE":
+            return "MSG_MODE"
+    except:
+        index = clients.index(client)
+        clients.remove(client)
+        client.close()
+        nickname = nicknames[index]
+        broadcast(f"{nickname} left the network".encode())
+        nicknames.remove(nickname)
 
 def recieve_old():
     while True:
