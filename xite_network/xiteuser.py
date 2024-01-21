@@ -59,31 +59,7 @@ class XiteUser(User):
         conn.close()
         print("User created successfully")
         return True
-
-    def __repr__(self):
-        return f"XiteUser({self.username}, {self.password}, {self.blockchain})"
-
-    @staticmethod
-    def delete(username: str) -> bool:
-        conn = sqlite3.connect('users.db')
-        c = conn.cursor()
-
-        c.execute("SELECT username FROM users WHERE username = ?", (username,))
-        result = c.fetchone()
-
-        if result is None:
-            print("Username not found")
-            return False
-
-        c.execute("DELETE FROM users WHERE username = ?", (username,))
-
-        conn.commit()
-        conn.close()
-
-        print("User deleted successfully")
-        return True
     
-
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")
     option = input("Does the user already exist? [y/n]: ")
@@ -108,6 +84,31 @@ def create_user() -> XiteUser | None:
     else:
         print("Enter the correct option!")
         create_user()
+
+
+    def __repr__(self):
+        return f"XiteUser({self.username}, {self.password}, {self.blockchain})"
+
+    @staticmethod
+    def delete(username: str) -> bool:
+        conn = sqlite3.connect('users.db')
+        c = conn.cursor()
+
+        c.execute("SELECT username FROM users WHERE username = ?", (username,))
+        result = c.fetchone()
+
+        if result is None:
+            print("Username not found")
+            return False
+
+        c.execute("DELETE FROM users WHERE username = ?", (username,))
+
+        conn.commit()
+        conn.close()
+
+        print("User deleted successfully")
+        return True
+    
 
 def print_database():
     conn = sqlite3.connect('users.db')
