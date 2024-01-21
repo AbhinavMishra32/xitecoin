@@ -32,12 +32,12 @@ def handle(client):
             nicknames.remove(nickname)
             break
 
-def recv_choice(client: socket.socket, choice: str):
+def handle_choice(client: socket.socket, choice: str):
     while True:
         try:
             # choice = client.recv(1024).decode()
             if choice == "SEND_BC":
-                return "Ok, send the blockchain"
+                client.send("Ok, send the blockchain".encode())
             if choice == "MESSAGE":
                 return "MSG_MODE"
         except:
@@ -72,7 +72,8 @@ def recieve():
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
-        nickname  = json.loads(client.recv(1024).decode())["sender"]
+        data_recvd = client.recv(2024).decode()
+        nickname  = json.loads(data_recvd)["sender"]
         nicknames.append(nickname)
         clients.append(client)
 
@@ -81,6 +82,9 @@ def recieve():
         client.send("Connected to the server".encode())
 
         choice = json.loads(client.recv(1024).decode())["action"]
+        handle_choice(client, choice)
+        
+        print(json.loads(data_recvd))
 
         thread = threading.Thread(target = handle, args = (client,))
         thread.start()
