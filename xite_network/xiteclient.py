@@ -11,12 +11,9 @@ client.connect(("localhost", 12345))
 def recieve():
     while True:
         try:
-            message = client.recv(1024).decode()
-            print(message)
-            # if message == "NICK":
-            #     client.send(nickname.encode())
-            # else:
-            #     print(message)
+            cl_data_recvd = json.loads(client.recv(2024).decode())
+            print(cl_data_recvd)
+            cl_handle_choice(cl_data_recvd["action"])
         except Exception as e:
             print(f"Error occurred: {e}")
             break
@@ -24,14 +21,15 @@ def recieve():
 def compare_length():
     pass
 
-def cl_handle_choice(client: socket.socket, choice: str):
+def cl_handle_choice(choice: str):
     try:
         if choice == "SEND_BC":
-            client.send("Ok, send the blockchain".encode())
-        if choice == "MESSAGE":
-            return "MSG_MODE"
+            client.send(make_json("Ok, send the blockchain", client_user.username, "HERE COMES THE BC DATA").encode())
     except Exception as e:
         print(f"Error occurred: {e}")
+
+def make_json(message: str, sender: str, data: str):
+    return json.dumps({"message": message, "sender": sender, "data": data})
 
 def write():
     while True:
@@ -72,3 +70,6 @@ if __name__ == "__main__":
 
     write_thread = threading.Thread(target = write)
     write_thread.start()
+
+
+#TODO: broadcasting is not working, fix it

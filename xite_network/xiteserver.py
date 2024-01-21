@@ -12,8 +12,6 @@ server.listen()
 clients = []
 nicknames = []
 
-actions = "HELLO", "GOODBYE", "MESSAGE"
-
 def broadcast(message):
     for client in clients:
         client.send(message)
