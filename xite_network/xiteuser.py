@@ -129,5 +129,4 @@ if __name__ == "__main__":
     print_database()
     print(XiteUser("Abhinav122", "adfs", Blockchain("testsetestset")))
     print_database()
-    
 

@@ -11,7 +11,7 @@ server.listen()
 clients = []
 nicknames = []
 
-
+actions = "HELLO", "GOODBYE", "MESSAGE"
 
 def broadcast(message):
     for client in clients:
@@ -27,12 +27,30 @@ def handle(client):
             clients.remove(client)
             client.close()
             nickname = nicknames[index]
-            broadcast(f"{nickname} left the chage".encode())
+            broadcast(f"{nickname} left the network".encode())
+            nicknames.remove(nickname)
+            break
+
+def recv_choice(client: socket.socket, choice: str):
+    while True:
+        try:
+            # choice = client.recv(1024).decode()
+            if choice == "SEND_BC":
+                return "Ok, send the blockchain"
+            if choice == "MESSAGE":
+                return "MSG_MODE"
+        except:
+            index = clients.index(client)
+            clients.remove(client)
+            client.close()
+            nickname = nicknames[index]
+            broadcast(f"{nickname} left the network".encode())
             nicknames.remove(nickname)
             break
 
 
-def recieve():
+
+def recieve_old():
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
@@ -49,6 +67,26 @@ def recieve():
         thread = threading.Thread(target = handle, args = (client,))
         thread.start()
 
+def recieve():
+    while True:
+        client, address = server.accept()
+        print(f"Connected with {str(address)}")
 
-print("Server started...")
-recieve()
+        client.send("NICK".encode())
+        nickname  = client.recv(1024).decode()
+        nicknames.append(nickname)
+        clients.append(client)
+
+        print(f"Nickname of client is {nickname}")
+        broadcast(f"{nickname} joined the chat!".encode())
+        client.send("Connected to the server".encode())
+
+        choice = recv_choice(client, "SEND_BC")
+        client.send(choice.encode())
+
+        thread = threading.Thread(target = handle, args = (client,))
+        thread.start()
+
+if __name__ == "__main__":
+    print("Server started...")
+    recieve()

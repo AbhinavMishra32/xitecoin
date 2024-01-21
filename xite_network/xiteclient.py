@@ -3,6 +3,7 @@ import threading
 from xitelib.node import Blockchain
 from .xiteuser import XiteUser
 import sys
+import json
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
@@ -21,9 +22,14 @@ def recieve():
 
 def write():
     while True:
-        message = f"{nickname}: {input('')}"
-        client.send(message.encode())
-    
+        send_message("MESSAGE", input(""))
+        # message = f"{nickname}: {input('')}"
+        # message = choice
+        # client.send(message.encode())
+
+def send_message(action: str, message: str):
+    msg_json = json.dumps({"action": action, "message": message})
+    client.send(msg_json.encode())
 
 
 if __name__ == "__main__":
