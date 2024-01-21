@@ -72,8 +72,9 @@ def recieve():
     while True:
         client, address = server.accept()
         print(f"Connected with {str(address)}")
-        data_recvd = client.recv(2024).decode()
-        nickname  = json.loads(data_recvd)["sender"]
+        data_recvd = json.loads(client.recv(2024).decode())
+        nickname  = data_recvd["sender"]
+        print(data_recvd)
         nicknames.append(nickname)
         clients.append(client)
 
@@ -82,10 +83,11 @@ def recieve():
         client.send("Connected to the server".encode())
 
         choice = json.loads(client.recv(1024).decode())["action"]
-        handle_choice(client, choice)
+        # handle_choice(client, choice)
         
-        print(json.loads(data_recvd))
-
+        print(data_recvd)
+        print(choice)
+        print("hello")
         thread = threading.Thread(target = handle, args = (client,))
         thread.start()
 

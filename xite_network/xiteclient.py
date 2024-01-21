@@ -23,11 +23,11 @@ def recieve():
 
 def write():
     while True:
-
         choice = input("Choose an action: ")
         message: str = input("Enter your message: ")
         data: str = input("Enter your data: ")
         json_test = json.dumps({"message": message, "sender": client_user.username, "data": data})
+        print(json_test)
         # json_test = json.dumps({"message": "Im sending teh blockchain mf", "sender": client_user.username, "data": "HERE COMES THE BC DATA"})
         send_message(choice, json_test)
         print("Sent message!")
