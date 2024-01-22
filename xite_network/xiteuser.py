@@ -126,7 +126,7 @@ def print_database():
 if __name__ == "__main__":
     # testUser = XiteUser("abhisnsdfsdf123", "myasp124124", Blockchain("testsetestset"))
     # print(testUser.blockchain)
-    print_database()
-    print(XiteUser("Abhinav122", "adfs", Blockchain("testsetestset")))
-    print_database()
-
+    # print_database()
+    # print(XiteUser("Abhinav122", "adfs", Blockchain("testsetestset")))
+    # print_database()
+    pass

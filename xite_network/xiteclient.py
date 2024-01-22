@@ -8,6 +8,32 @@ import json
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
 
+def recieve_dbug():
+    while True:
+        try:
+            data = client.recv(2024)
+        except Exception as e:
+            print(f"Error receiving data: {e}")
+            # break
+
+        try:
+            decoded_data = data.decode()
+        except Exception as e:
+            print(f"Error decoding data: {e}")
+            # break
+
+        try:
+            cl_data_recvd = json.loads(decoded_data)
+        except Exception as e:
+            print(f"Error parsing JSON: {e}")
+            # break
+
+        try:
+            cl_handle_choice(cl_data_recvd["action"])
+        except Exception as e:
+            print(f"Error handling action: {e}")
+            # break
+
 def recieve():
     while True:
         try:
@@ -16,7 +42,7 @@ def recieve():
             cl_handle_choice(cl_data_recvd["action"])
         except Exception as e:
             print(f"Error occurred: {e}")
-            break
+            # break
 
 def compare_length():
     pass
@@ -63,6 +89,7 @@ if __name__ == "__main__":
     password = sys.argv[2]
 
     tb = Blockchain("tb")
+    tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
     recieve_thread = threading.Thread(target = recieve)
