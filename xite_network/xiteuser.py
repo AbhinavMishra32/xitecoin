@@ -60,9 +60,10 @@ class XiteUser(User):
         print("User created successfully")
         return True
     
-    def nwtransaction(self, recipient: User, amount: int) -> Data:
-        return super().transaction(recipient, amount)
-        
+    def nwtransaction(self, recipient: User, amount: int):
+        super().transaction(recipient, amount)
+        json_data = self.blockchain.chain[-1].to_dict()
+        return json_data
     
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")

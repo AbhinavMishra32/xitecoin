@@ -1,5 +1,6 @@
 import socket
 import threading
+import asyncio
 from xitelib.node import Blockchain
 from .xiteuser import XiteUser
 import sys
@@ -9,6 +10,7 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
 
 nicknames = []
+trans_buffer = []
 
 def recieve_dbug():
     while True:
@@ -58,11 +60,17 @@ def cl_handle_choice(json):
     try:
         if json["action"] == "SEND_BC":
             client.send(make_json("Ok, send the blockchain", client_user.username, "HERE COMES THE BC DATA").encode())
+        if json["action"] == "BC_TRANSACTION_DATA":
+            json["data"] = json["data"].split()
     except Exception as e:
         print(f"Error occurred: {e}")
 
 def make_json(message: str, sender: str, data: str):
-    return json.dumps({"message": message, "sender": sender, "data": data})
+    return json.dumps({"message": message, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
+
+"""
+get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
+"""
 
 def send_msg():
     while True:
@@ -117,12 +125,14 @@ if __name__ == "__main__":
     password = sys.argv[2]
 
     tb = Blockchain("tb")
-    tb.create_genesis_block()
+    tb.load_blockchain()
+    tb.verify_blockchain()
+    # tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
-    client_user.transaction(client_user, 0)
+    print(client_user.nwtransaction(client_user, 0))
     tb.save_blockchain()
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
-
+ 
     write_thread = threading.Thread(target = write)
     write_thread.start()

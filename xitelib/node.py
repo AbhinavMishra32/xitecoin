@@ -207,7 +207,7 @@ class User:
         """
         if self.amount < amount:
             print("Insufficient balance")
-            return # type: ignore
+            raise ValueError(f"Insufficient balance for {self.name}")
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
