@@ -13,26 +13,32 @@ clients = []
 nicknames = []
 
 def broadcast(message):
-    for client in clients:
-        client.send(message)
+    try:
+        for client in clients:
+            client.send(message)
+            print("Message sent")
+    except Exception as e:
+        print(f"Error occurred while broadcasting: {e}")
 
 def handle(client: socket.socket):
     while True:
         try:
-            data_recvd = json.loads(client.recv(2024).decode())
+            data = client.recv(2024).decode()
+            data_recvd = json.loads(data)
+            # nickname = data_recvd["sender"]
+            # nicknames.append(nickname)
             print(data_recvd)
-            json.dumps(data_recvd)
-            # handle_choice(client, data_recvd["action"])
-            # message = client.recv(1024)
-            broadcast(data_recvd.encode())
+            sent_data = json.dumps(data_recvd)
+            handle_choice(client, data_recvd["action"])
+            broadcast(sent_data.encode())
         except:
             if client.fileno() == -1:
                 # The client's socket has been closed
-                # index = clients.index(client)
+                index = clients.index(client)
                 clients.remove(client)
-                # nickname = nicknames[index]
+                nickname = nicknames[index]
                 broadcast(f"{client} left the network".encode())
-                # nicknames.remove(nickname)
+                nicknames.remove(nickname)
                 break
             else:
                 # An exception occurred, but the client's socket is still open
@@ -47,12 +53,12 @@ def handle_choice(client: socket.socket, choice: str):
         if choice == "MESSAGE":
             return "MSG_MODE"
     except:
-        # index = clients.index(client)
+        index = clients.index(client)
         clients.remove(client)
         client.close()
-        # nickname = nicknames[index]
+        nickname = nicknames[index]
         broadcast(f"{client} left the network".encode())
-        # nicknames.remove(nickname)
+        nicknames.remove(nickname)
 
 def recieve_old():
     while True:
@@ -75,20 +81,16 @@ def recieve():
     try:
         while True:
             client, address = server.accept()
+            data = client.recv(1024).decode()
+            data_recvd = json.loads(data)
+            nickname = data_recvd["sender"]
+            nicknames.append(nickname)
             print(f"Connected with {str(address)}")
-
-            # data_recvd = json.loads(client.recv(2024).decode())
-            # nickname  = data_recvd["sender"]
-            # print(data_recvd)
-            # nicknames.append(nickname)
             try:
                 clients.append(client)
-                print(f"Client {client} added to clients list")
+                print(f"{nickname} added to clients list")
             except Exception as e:
                 print(f"Error occured while appending client to clients list: {e}")
-
-            # print(f"Nickname of client is {nickname}")
-            # broadcast(f"{nickname} joined the chat!".encode())
             client.send("Connected to the server".encode())
             thread = threading.Thread(target = handle, args = (client,))
             thread.start()

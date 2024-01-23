@@ -15,25 +15,25 @@ def recieve_dbug():
             data = client.recv(2024)
         except Exception as e:
             print(f"Error receiving data: {e}")
-            # break
+            break
 
         try:
             decoded_data = data.decode()
         except Exception as e:
             print(f"Error decoding data: {e}")
-            # break
+            break
 
         try:
             cl_data_recvd = json.loads(decoded_data)
         except Exception as e:
             print(f"Error parsing JSON: {e}")
-            # break
+            break
 
         try:
             cl_handle_choice(cl_data_recvd["action"])
         except Exception as e:
             print(f"Error handling action: {e}")
-            # break
+            break
 
 def recieve():
     while True:
@@ -76,6 +76,7 @@ def send_msg():
 
 def write():
     while True:
+        client.send(json.dumps({"sender": client_user.username}).encode())
         choice: str = input("Choose an action: ")
         message: str = input("Enter your message: ")
         data: str = input("Enter array: ")
@@ -91,7 +92,6 @@ def write():
         # message = choice
         # client.send(message.encode())
 
-
 def send_message(action: str, message: str):
     message = json.loads(message)
     msg_json = json.dumps({"action": action, "message": message["message"], "sender": client_user.username, "data": message["data"]}) #type: ignore
@@ -101,14 +101,14 @@ def recv_msg():
     while True:
         try:
             data = client.recv(2024).decode()
+            data_json = json.loads(data)
             if data:  # Check if data is not empty
-                print(data)
+                print(data_json)
             else:
                 print("No data received")
         except Exception as e:
             print(f"Error occurred: {e}")
-            break
-
+            # break
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
 
-    write_thread = threading.Thread(target = send_msg)
+    write_thread = threading.Thread(target = write)
     write_thread.start()
 
 
