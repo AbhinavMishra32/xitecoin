@@ -72,32 +72,29 @@ def recieve_old():
         thread.start()
 
 def recieve():
-    while True:
-        client, address = server.accept()
-        print(f"Connected with {str(address)}")
-        thread = threading.Thread(target = handle, args = (client,))
-        thread.start()
-        # data_recvd = json.loads(client.recv(2024).decode())
-        # nickname  = data_recvd["sender"]
-        # print(data_recvd)
-        # nicknames.append(nickname)
-        try:
-            clients.append(client)
-            print(f"Client {client} added to clients list")
-        except Exception as e:
-            print(f"Error occured while appending client to clients list: {e}")
+    try:
+        while True:
+            client, address = server.accept()
+            print(f"Connected with {str(address)}")
 
-        # print(f"Nickname of client is {nickname}")
-        # broadcast(f"{nickname} joined the chat!".encode())
-        client.send("Connected to the server".encode())
+            # data_recvd = json.loads(client.recv(2024).decode())
+            # nickname  = data_recvd["sender"]
+            # print(data_recvd)
+            # nicknames.append(nickname)
+            try:
+                clients.append(client)
+                print(f"Client {client} added to clients list")
+            except Exception as e:
+                print(f"Error occured while appending client to clients list: {e}")
 
-        # choice = json.loads(client.recv(1024).decode())["action"]
-        # handle_choice(client, choice)
-        
-        # print(data_recvd)=
-        # print(choice)
-        # print("hello")
-
+            # print(f"Nickname of client is {nickname}")
+            # broadcast(f"{nickname} joined the chat!".encode())
+            client.send("Connected to the server".encode())
+            thread = threading.Thread(target = handle, args = (client,))
+            thread.start()
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        server.close()
 
 if __name__ == "__main__":
     print("Server started...")

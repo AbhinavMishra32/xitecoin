@@ -10,6 +10,7 @@ client.connect(("localhost", 12345))
 
 def recieve_dbug():
     while True:
+        cl_data_recvd = {}
         try:
             data = client.recv(2024)
         except Exception as e:
@@ -37,12 +38,16 @@ def recieve_dbug():
 def recieve():
     while True:
         try:
-            cl_data_recvd = json.loads(client.recv(2024).decode())
-            print(cl_data_recvd)
-            cl_handle_choice(cl_data_recvd["action"])
+            data = client.recv(2024).decode()
+            if data:  # Check if data is not empty
+                cl_data_recvd = json.loads(data)
+                print(cl_data_recvd)
+                cl_handle_choice(cl_data_recvd["action"])
+            else:
+                print("No data received")
         except Exception as e:
             print(f"Error occurred: {e}")
-            # break
+            break
 
 def compare_length():
     pass
@@ -56,6 +61,18 @@ def cl_handle_choice(choice: str):
 
 def make_json(message: str, sender: str, data: str):
     return json.dumps({"message": message, "sender": sender, "data": data})
+
+def send_msg():
+    while True:
+        try:
+            message = input("Enter your message: ")
+            client.send(json.dumps(message).encode())
+            if message == "DISCONNECT":
+                client.close()
+                break
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            break
 
 def write():
     while True:
@@ -74,10 +91,23 @@ def write():
         # message = choice
         # client.send(message.encode())
 
+
 def send_message(action: str, message: str):
     message = json.loads(message)
     msg_json = json.dumps({"action": action, "message": message["message"], "sender": client_user.username, "data": message["data"]}) #type: ignore
     client.send(msg_json.encode())
+
+def recv_msg():
+    while True:
+        try:
+            data = client.recv(2024).decode()
+            if data:  # Check if data is not empty
+                print(data)
+            else:
+                print("No data received")
+        except Exception as e:
+            print(f"Error occurred: {e}")
+            break
 
 
 if __name__ == "__main__":
@@ -92,10 +122,10 @@ if __name__ == "__main__":
     tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
-    recieve_thread = threading.Thread(target = recieve)
+    recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
 
-    write_thread = threading.Thread(target = write)
+    write_thread = threading.Thread(target = send_msg)
     write_thread.start()
 
 
