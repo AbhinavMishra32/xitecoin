@@ -16,7 +16,7 @@ def broadcast(message):
     try:
         for client in clients:
             client.send(message)
-            print("Message sent")
+        print("Message sent to all clients")
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
 
@@ -25,8 +25,6 @@ def handle(client: socket.socket):
         try:
             data = client.recv(2024).decode()
             data_recvd = json.loads(data)
-            # nickname = data_recvd["sender"]
-            # nicknames.append(nickname)
             print(data_recvd)
             sent_data = json.dumps(data_recvd)
             handle_choice(client, data_recvd["action"])
@@ -49,7 +47,7 @@ def handle_choice(client: socket.socket, choice: str):
     try:
         # choice = client.recv(1024).decode()
         if choice == "SEND_BC":
-            client.send("Ok, send the blockchain".encode())
+            client.send(json.dumps("Ok, send the blockchain").encode())
         if choice == "MESSAGE":
             return "MSG_MODE"
     except:
@@ -57,7 +55,7 @@ def handle_choice(client: socket.socket, choice: str):
         clients.remove(client)
         client.close()
         nickname = nicknames[index]
-        broadcast(f"{client} left the network".encode())
+        broadcast(f"{nickname} left the network".encode())
         nicknames.remove(nickname)
 
 def recieve_old():

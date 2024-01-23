@@ -8,6 +8,8 @@ import json
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
 
+nicknames = []
+
 def recieve_dbug():
     while True:
         cl_data_recvd = {}
@@ -52,9 +54,9 @@ def recieve():
 def compare_length():
     pass
 
-def cl_handle_choice(choice: str):
+def cl_handle_choice(json):
     try:
-        if choice == "SEND_BC":
+        if json["action"] == "SEND_BC":
             client.send(make_json("Ok, send the blockchain", client_user.username, "HERE COMES THE BC DATA").encode())
     except Exception as e:
         print(f"Error occurred: {e}")
@@ -80,17 +82,11 @@ def write():
         choice: str = input("Choose an action: ")
         message: str = input("Enter your message: ")
         data: str = input("Enter array: ")
-        
         # data = [block.to_dict() for block in client_user.blockchain.chain]
         json_test = json.dumps({"message": message, "sender": client_user.username, "data": data.split()})
         print(json_test)
-        # json_test = json.dumps({"message": "Im sending teh blockchain mf", "sender": client_user.username, "data": "HERE COMES THE BC DATA"})
         send_message(choice, json_test)
         print("Sent message!")
-        # send_message("MESSAGE", input(""))
-        # message = f"{nickname}: {input('')}"
-        # message = choice
-        # client.send(message.encode())
 
 def send_message(action: str, message: str):
     message = json.loads(message)
@@ -102,13 +98,15 @@ def recv_msg():
         try:
             data = client.recv(2024).decode()
             data_json = json.loads(data)
-            if data:  # Check if data is not empty
+            if data_json["sender"] not in nicknames:
+                nicknames.append(data_json["sender"])
+            if data:
                 print(data_json)
+                cl_handle_choice(data_json)
             else:
                 print("No data received")
         except Exception as e:
             print(f"Error occurred: {e}")
-            # break
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
