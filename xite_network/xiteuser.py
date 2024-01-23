@@ -1,4 +1,4 @@
-from xitelib.node import Blockchain, User
+from xitelib.node import Blockchain, Data, User
 from settings.settings import Settings
 import sqlite3
 
@@ -59,6 +59,10 @@ class XiteUser(User):
         conn.close()
         print("User created successfully")
         return True
+    
+    def nwtransaction(self, recipient: User, amount: int) -> Data:
+        return super().transaction(recipient, amount)
+        
     
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")

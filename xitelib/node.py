@@ -222,6 +222,7 @@ class User:
             print("Transaction was not able to be verified!")
         return transaction_data
 
+
     def mine_block(self):
         pass
         # User this later for listening and broadcasting the blocks after mining from socket

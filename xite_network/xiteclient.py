@@ -119,12 +119,10 @@ if __name__ == "__main__":
     tb = Blockchain("tb")
     tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
-
+    client_user.transaction(client_user, 0)
+    tb.save_blockchain()
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
 
     write_thread = threading.Thread(target = write)
     write_thread.start()
-
-
-#TODO: broadcasting is not working, fix it
