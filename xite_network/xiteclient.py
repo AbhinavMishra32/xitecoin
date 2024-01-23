@@ -68,9 +68,9 @@ def cl_handle_choice(json):
 def make_json(message: str, sender: str, data: str):
     return json.dumps({"message": message, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
 
-"""
-get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
-"""
+
+#TODO: get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
+
 
 def send_msg():
     while True:
