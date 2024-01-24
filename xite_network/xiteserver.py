@@ -27,7 +27,7 @@ def handle(client: socket.socket):
             data_recvd = json.loads(data)
             print(data_recvd)
             sent_data = json.dumps(data_recvd)
-            handle_choice(client, data_recvd["action"])
+            handle_choice(client, data_recvd)
             broadcast(sent_data.encode())
         except:
             if client.fileno() == -1:
@@ -43,13 +43,16 @@ def handle(client: socket.socket):
                 # Continue to the next iteration of the loop to try to receive more data
                 continue
 
-def handle_choice(client: socket.socket, choice: str):
+def handle_choice(client: socket.socket, json):
     try:
         # choice = client.recv(1024).decode()
-        if choice == "SEND_BC":
+        if json["action"] == "SEND_BC":
             client.send(json.dumps("Ok, send the blockchain").encode())
-        if choice == "MESSAGE":
+        if json["action"] == "MESSAGE":
             return "MSG_MODE"
+        if json["action"] == "BC_TRANSACTION_DATA":
+            print(json["data"])
+        
     except:
         index = clients.index(client)
         clients.remove(client)
@@ -82,6 +85,7 @@ def recieve():
             data = client.recv(10024).decode()
             data_recvd = json.loads(data)
             nickname = data_recvd["sender"]
+            print(data_recvd)
             nicknames.append(nickname)
             print(f"Connected with {str(address)}")
             try:

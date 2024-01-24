@@ -67,6 +67,17 @@ class XiteUser(User):
         json_data = self.blockchain.chain[-1].to_dict()
         return json_data
     
+    def user_exists(self, username) -> bool:
+        # blockchain = Blockchain(self.blockchain.name)
+        # blockchain.load_blockchain()
+        with open(self.blockchain.file_path, 'r') as f:
+            blockchain_data = json.load(f)
+        for block in blockchain_data["chain"]:
+            for transaction in block["transactions"]:
+                if transaction["sender"] == username or transaction["recipient"] == username:
+                    return True
+        return False
+    
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")
     option = input("Does the user already exist? [y/n]: ")

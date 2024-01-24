@@ -200,6 +200,7 @@ class User:
     def sign(self, message: str) -> bytes:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
         return signature
+    
 
     def transaction(self, recipient: "User", amount: int, save = True) -> Data:
         """
