@@ -33,11 +33,11 @@ def recieve_dbug():
             print(f"Error parsing JSON: {e}")
             break
 
-        try:
-            cl_handle_choice(cl_data_recvd["action"])
-        except Exception as e:
-            print(f"Error handling action: {e}")
-            break
+        # try:
+        #     cl_handle_json(cl_data_recvd["action"])
+        # except Exception as e:
+        #     print(f"Error handling action: {e}")
+        #     break
 
 def recieve():
     while True:
@@ -46,7 +46,7 @@ def recieve():
             if data:  # Check if data is not empty
                 cl_data_recvd = json.loads(data)
                 print(cl_data_recvd)
-                cl_handle_choice(cl_data_recvd["action"])
+                cl_handle_json(cl_data_recvd["action"])
             else:
                 print("No data received")
         except Exception as e:
@@ -56,16 +56,18 @@ def recieve():
 def compare_length():
     pass
 
-def cl_handle_choice(json):
+def cl_handle_json(json):
     try:
+        if json["sender"] not in nicknames:
+                nicknames.append(json["sender"])
         if json["action"] == "SEND_BC":
             client.send(make_json("Ok, send the blockchain", client_user.username, "HERE COMES THE BC DATA").encode())
         if json["action"] == "BC_TRANSACTION_DATA":
-            json["data"] = json["data"].split()
+            print("Got transaction data, here it is: \n" + json["data"])
     except Exception as e:
-        print(f"Error occurred: {e}")
+        print(f"Error occurred while handling json: {e}")
 
-def make_json(message: str, sender: str, data: str):
+def make_json(data, message: str = "Default message", sender: str = "Default sender"):
     return json.dumps({"message": message, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
 
 
@@ -96,9 +98,10 @@ def write():
         send_message(choice, json_test)
         print("Sent message!")
 
-def send_message(action: str, message: str):
+def send_message(action: str, message):
     message = json.loads(message)
     msg_json = json.dumps({"action": action, "message": message["message"], "sender": client_user.username, "data": message["data"]}) #type: ignore
+    print(msg_json)
     client.send(msg_json.encode())
 
 def recv_msg():
@@ -106,11 +109,10 @@ def recv_msg():
         try:
             data = client.recv(2024).decode()
             data_json = json.loads(data)
-            if data_json["sender"] not in nicknames:
-                nicknames.append(data_json["sender"])
+            
             if data:
                 print(data_json)
-                cl_handle_choice(data_json)
+                cl_handle_json(data_json)
             else:
                 print("No data received")
         except Exception as e:
@@ -127,12 +129,21 @@ if __name__ == "__main__":
     tb = Blockchain("tb")
     tb.load_blockchain()
     tb.verify_blockchain()
+
     # tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
-    print(client_user.nwtransaction(client_user, 0))
-    tb.save_blockchain()
+    if client_user.username == "Abhinav1":
+        # sdata = send_message("BC_TRANSACTION_DATA",json.dumps(client_user.nwtransaction(client_user, 0, save = False)))
+        sdata = make_json(client_user.nwtransaction(client_user, 0, save = False), "BC_TRANSACTION_DATA", client_user.username)
+        print(sdata)
+        client.send(sdata.encode())
+        client.send(json.dumps({"testing":"tested"}).encode())
+        print("Sent transaction data")
+    else:
+        print("Not Abhinav1 so not sending transaction data, only recieving")
+    # tb.save_blockchain()
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
- 
-    write_thread = threading.Thread(target = write)
-    write_thread.start()
+
+    # write_thread = threading.Thread(target = write)
+    # write_thread.start()

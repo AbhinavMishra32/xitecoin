@@ -1,14 +1,16 @@
 from xitelib.node import Blockchain, Data, User
 from settings.settings import Settings
 import sqlite3
+import json
 
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
-'''
-this class is used to create a user and store it in the database
-'''
+
 
 class XiteUser(User):
+    '''
+    this class is used to create a user and store it in the database
+    '''
     def __init__(self, username: str, password: str, blockchain: Blockchain):
         super().__init__(username, blockchain)
         self.username = username
@@ -60,8 +62,8 @@ class XiteUser(User):
         print("User created successfully")
         return True
     
-    def nwtransaction(self, recipient: User, amount: int):
-        super().transaction(recipient, amount)
+    def nwtransaction(self, recipient: User, amount: int, save: bool = True) -> dict:
+        super().transaction(recipient, amount, save)
         json_data = self.blockchain.chain[-1].to_dict()
         return json_data
     

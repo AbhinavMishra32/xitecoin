@@ -201,7 +201,7 @@ class User:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
         return signature
 
-    def transaction(self, recipient: "User", amount: int) -> Data:
+    def transaction(self, recipient: "User", amount: int, save = True) -> Data:
         """
         Returns Data and also adds new Block to the Blockchain automatically.
         """
@@ -215,11 +215,12 @@ class User:
         transaction_data = Data(self, recipient, amount, self.message)
         # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
         new_block = Block(transaction_data) #* gives current transaction data's hash to the current block but add_block() method automatically gives the hash of the current block to the next block. (or current block has previous block's hash)
-        if self.blockchain.verify_block(new_block):
-            self.blockchain.add_block(new_block)
-            print("Transaction was verified! ")
-        else: 
-            print("Transaction was not able to be verified!")
+        if save:
+            if self.blockchain.verify_block(new_block):
+                self.blockchain.add_block(new_block)
+                print("Transaction was verified! ")
+            else: 
+                print("Transaction was not able to be verified!")
         return transaction_data
 
 

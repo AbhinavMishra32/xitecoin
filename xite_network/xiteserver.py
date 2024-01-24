@@ -79,7 +79,7 @@ def recieve():
     try:
         while True:
             client, address = server.accept()
-            data = client.recv(1024).decode()
+            data = client.recv(10024).decode()
             data_recvd = json.loads(data)
             nickname = data_recvd["sender"]
             nicknames.append(nickname)
