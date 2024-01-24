@@ -99,8 +99,13 @@ def write():
         print("Sent message!")
 
 def send_message(action: str, message):
-    message = json.loads(message)
-    msg_json = json.dumps({"action": action, "message": message["message"], "sender": client_user.username, "data": message["data"]}) #type: ignore
+    message_dict = json.loads(message)
+    msg_json = json.dumps({
+        "action": action, 
+        "message": message_dict.get("message", "No message"),  # Use a default value if "message" key is not present
+        "sender": client_user.username, 
+        "data": message_dict.get("data", {})  # Use a default value if "data" key is not present
+    }) 
     print(msg_json)
     client.send(msg_json.encode())
 
@@ -134,9 +139,10 @@ if __name__ == "__main__":
     client_user = XiteUser(username, password, tb)
     if client_user.username == "Abhinav1":
         # sdata = send_message("BC_TRANSACTION_DATA",json.dumps(client_user.nwtransaction(client_user, 0, save = False)))
-        sdata = make_json(client_user.nwtransaction(client_user, 0, save = False), "BC_TRANSACTION_DATA", client_user.username)
-        print(sdata)
-        client.send(sdata.encode())
+        # sdata = make_json(client_user.nwtransaction(client_user, 0, save = False), "BC_TRANSACTION_DATA", client_user.username)
+        # print(sdata)
+        # client.send(sdata.encode())
+        send_message("BC_TRANSACTION_DATA", json.dumps(client_user.nwtransaction(client_user, 0, save = False)))
         client.send(json.dumps({"testing":"tested"}).encode())
         print("Sent transaction data")
     else:
