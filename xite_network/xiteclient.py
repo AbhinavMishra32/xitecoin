@@ -92,6 +92,9 @@ def write():
         recp_user = User(recipient,client_user.blockchain)
         client_user.nwtransaction(recp_user, amount)
 
+        send_data = make_json(data = client_user.nwtransaction(recp_user, amount, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
+        print(send_data)
+        client.send(send_data.encode())
         # if client_user.user_exists(recipient):
         #     print("User exists")
         #     recp_user = User(recipient,client_user.blockchain)
@@ -153,15 +156,15 @@ if __name__ == "__main__":
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
     
-    if client_user.username == "Abhinav1":
-        send_message("my action",json.dumps({"testing":"tested"}))
-        sdata = make_json(data = client_user.nwtransaction(client_user, 0, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
-        print(sdata)
-        client.send(sdata.encode())
-        print("Sent transaction data")
-    else:
-        print("Not Abhinav1 so not sending transaction data, only recieving")
-        send_message("my action",json.dumps({"testing":"tested"}))
+    # if client_user.username == "Abhinav1":
+    #     send_message("my action",json.dumps({"testing":"tested"}))
+    #     sdata = make_json(data = client_user.nwtransaction(client_user, 0, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
+    #     print(sdata)
+    #     client.send(sdata.encode())
+    #     print("Sent transaction data")
+    # else:
+    #     print("Not Abhinav1 so not sending transaction data, only recieving")
+    #     send_message("my action",json.dumps({"testing":"tested"}))
     # tb.save_blockchain()
 
 
