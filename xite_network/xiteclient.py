@@ -89,15 +89,19 @@ def write():
         payment: str = input("Enter payment: ")
         recipient = payment.split(' ')[0]
         amount = int(payment.split(' ')[1])
-        if client_user.user_exists(recipient):
-            print("User exists")
-            recp_user = User(recipient,client_user.blockchain)
-            client_user.nwtransaction(recp_user, amount)
-        else:
-            print("User doesn't exist")
-            print("Making new user to put in blockchain")
-            recp_user = User(recipient,client_user.blockchain)
-            continue
+        recp_user = User(recipient,client_user.blockchain)
+        client_user.nwtransaction(recp_user, amount)
+
+        # if client_user.user_exists(recipient):
+        #     print("User exists")
+        #     recp_user = User(recipient,client_user.blockchain)
+        #     client_user.nwtransaction(recp_user, amount)
+        # else:
+        #     print("User doesn't exist")
+        #     print("Making new user to put in blockchain")
+        #     recp_user = User(recipient,client_user.blockchain)
+        #     client_user.nwtransaction(recp_user, amount)
+        #     continue
         
         # data = [block.to_dict() for block in client_user.blockchain.chain]
         # json_test = json.dumps({"message": message, "sender": client_user.username, "data": data.split()})
@@ -129,6 +133,7 @@ def recv_msg():
                 print("No data received")
         except Exception as e:
             print(f"Error occurred: {e}")
+            break
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

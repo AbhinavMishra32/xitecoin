@@ -32,11 +32,11 @@ def handle(client: socket.socket):
         except:
             if client.fileno() == -1:
                 # The client's socket has been closed
-                index = clients.index(client)
-                clients.remove(client)
-                nickname = nicknames[index]
-                broadcast(f"{client} left the network".encode())
-                nicknames.remove(nickname)
+                # index = clients.index(client)
+                # clients.remove(client)
+                # nickname = nicknames[index]
+                # broadcast(f"{client} left the network".encode())
+                # nicknames.remove(nickname)
                 break
             else:
                 # An exception occurred, but the client's socket is still open
@@ -83,22 +83,22 @@ def recieve():
         while True:
             client, address = server.accept()
             data = client.recv(10024).decode()
-            data_recvd = json.loads(data)
-            nickname = data_recvd["sender"]
-            print(data_recvd)
-            nicknames.append(nickname)
-            print(f"Connected with {str(address)}")
-            try:
-                clients.append(client)
-                print(f"{nickname} added to clients list")
-            except Exception as e:
-                print(f"Error occured while appending client to clients list: {e}")
-            client.send("Connected to the server".encode())
-            thread = threading.Thread(target = handle, args = (client,))
-            thread.start()
+            if data:  # Add this line
+                data_recvd = json.loads(data)
+                nickname = data_recvd["sender"]
+                print(data_recvd)
+                nicknames.append(nickname)
+                print(f"Connected with {str(address)}")
+                try:
+                    clients.append(client)
+                    print(f"{nickname} added to clients list")
+                except Exception as e:
+                    print(f"Error occured while appending client to clients list: {e}")
+                client.send("Connected to the server".encode())
+                thread = threading.Thread(target = handle, args = (client,))
+                thread.start()
     except Exception as e:
         print(f"Error occurred: {e}")
-        server.close()
 
 if __name__ == "__main__":
     print("Server started...")

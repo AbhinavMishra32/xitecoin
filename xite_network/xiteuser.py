@@ -72,10 +72,10 @@ class XiteUser(User):
         # blockchain.load_blockchain()
         with open(self.blockchain.file_path, 'r') as f:
             blockchain_data = json.load(f)
-        for block in blockchain_data["chain"]:
-            for transaction in block["transactions"]:
-                if transaction["sender"] == username or transaction["recipient"] == username:
-                    return True
+        for block in blockchain_data:
+            data = block['data']
+            if data['sender_name'] == username or data['recipient_name'] == username:
+                return True
         return False
     
 def create_user() -> XiteUser | None:
