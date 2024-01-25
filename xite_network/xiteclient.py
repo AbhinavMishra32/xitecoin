@@ -59,6 +59,8 @@ def cl_handle_json(client, json):
     try:
         if json["sender"] not in nicknames:
                 nicknames.append(json["sender"])
+                #dbug
+                print(f"New user connected: {json['sender']}")
         if json["action"] == "SEND_BC":
             print("Sending whole blockchain")
             send_whole_blockchain(client)
