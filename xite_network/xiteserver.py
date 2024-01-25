@@ -2,8 +2,6 @@ import socket
 import threading
 import json
 
-from xitelib.node import Blockchain
-
 HOST = "localhost"
 PORT = 12345
 
