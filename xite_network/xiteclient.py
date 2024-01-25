@@ -45,7 +45,7 @@ def recieve():
             if data:  # Check if data is not empty
                 cl_data_recvd = json.loads(data)
                 print(cl_data_recvd)
-                cl_handle_json(cl_data_recvd["action"])
+                cl_handle_json(client, cl_data_recvd["action"])
             else:
                 print("No data received")
         except Exception as e:
@@ -55,21 +55,33 @@ def recieve():
 def compare_length():
     pass
 
-def cl_handle_json(json):
+def cl_handle_json(client, json):
     try:
         if json["sender"] not in nicknames:
                 nicknames.append(json["sender"])
         if json["action"] == "SEND_BC":
-            client.send(make_json("Ok, send the blockchain", client_user.username, "HERE COMES THE BC DATA").encode())
+            print("Sending whole blockchain")
+            send_whole_blockchain(client)
         if json["action"] == "BC_TRANSACTION_DATA":
             print("Got transaction data, here it is: \n" + json["data"])
     except Exception as e:
         print(f"Error occurred while handling json: {e}")
 
-def make_json(data, sender: str = "Default sender", action: str = "Default action"):
+def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
     return json.dumps({"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
         
 #TODO: get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
+
+def send_whole_blockchain(client):
+    with open(client_user.blockchain.file_path, 'r') as f:
+        blockchain = json.load(f)
+        client.send(make_json(blockchain, "SEND_BC", client_user.username).encode())
+
+def make_block():
+    pass
+
+def mine_block():
+    pass
 
 def send_msg():
     while True:
@@ -131,7 +143,7 @@ def recv_msg():
             
             if data:
                 print(data_json)
-                cl_handle_json(data_json)
+                cl_handle_json(client, data_json)
             else:
                 print("No data received")
         except Exception as e:
