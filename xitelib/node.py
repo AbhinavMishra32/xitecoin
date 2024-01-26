@@ -179,7 +179,7 @@ class Blockchain:
     @staticmethod
     def verify_single_block(blockchain: 'Blockchain', block: 'Block'):
         if not blockchain.verify_PoW_singlePass(block):
-                raise ValueError("Invalid blockchain: hash does not match!")
+                raise InvalidTransactionException("Invalid blockchain: hash does not match!")
         else:
             print("BLOCK VERIFIED!")
 
@@ -219,7 +219,7 @@ class User:
         """
         if self.amount < amount:
             print("Insufficient balance")
-            raise ValueError(f"Insufficient balance for {self.name}")
+            raise InvalidTransactionException(f"Insufficient balance for {self.name}")
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
@@ -242,9 +242,9 @@ class User:
         pass
         # User this later for listening and broadcasting the blocks after mining from socket
         
+class InvalidTransactionException(Exception):
+    pass
 
-# def to_dict(tr) ->list:
-#     return [dict(to_dict(tr))]
 
 if __name__ == "__main__":
     pass

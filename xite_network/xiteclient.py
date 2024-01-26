@@ -1,7 +1,8 @@
+from re import T
 import socket
 import threading
-from xitelib.node import Blockchain, User, Block, Data
-from xite_network.xiteuser import XiteUser
+from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
+from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
 import json
 from termcolor import colored
@@ -10,7 +11,7 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
 
 nicknames = []
-trans_buffer = []
+TRANSACTION_BUFFER = []
 
 def recieve_dbug():
     while True:
@@ -82,8 +83,15 @@ def cl_handle_json(client, data: dict):
             # XiteUser.save_block(client_user, node_block)
             # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
             # Blockchain.verify_single_block(client_user.blockchain, node_block)
-
-            XiteUser.mine_block(data, client_user)
+            add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+            print("Transaction buffer:")
+            # print(colored(len(TRANSACTION_BUFFER), 'green'))
+            for _ in TRANSACTION_BUFFER:
+                print("----Transaction Data----")
+                print_transaction_data(data)
+                print("--------------------")
+            print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+            # XiteUser.mine_block(data, client_user)
 
         else:
             print(colored("No action specified", 'light_red'))
@@ -106,7 +114,11 @@ def send_whole_blockchain(client):
 
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
-    return client_user.nwtransaction(recp_user, amount, save = False, return_block = True)
+    try:
+        return client_user.nwtransaction(recp_user, amount, save = False, return_block = True)
+    except InvalidTransactionException as e:
+        print(colored(f"Error occurred while making transaction: {e}", 'red'))
+        return None
     # return client_user.blockchain.chain[-1].to_dict()
 
 def mine_block():
@@ -178,6 +190,26 @@ def recv_msg():
         # finally:
         #     print("actual data recieved:")
         #     print(data)
+        
+
+
+def print_transaction_data(transaction_data):
+    print(colored("\nTransaction Data:", 'yellow'))
+    print(colored(f"Action: {transaction_data['action']}", 'green'))
+    print(colored(f"Sender: {transaction_data['sender']}", 'green'))
+    print(colored(f"Blockchain Name: {transaction_data['bc_name']}", 'green'))
+    print(colored("\nBlock Data:", 'yellow'))
+    print(colored(f"Previous Hash: {transaction_data['data']['prev_hash']}", 'green'))
+    print(colored(f"Hash: {transaction_data['data']['hash']}", 'green'))
+    print(colored(f"Timestamp: {transaction_data['data']['timestamp']}", 'green'))
+    print(colored(f"Nonce: {transaction_data['data']['nonce']}", 'green'))
+    print(colored("\nTransaction Details:", 'yellow'))
+    print(colored(f"Sender Name: {transaction_data['data']['data']['sender_name']}", 'green'))
+    print(colored(f"Recipient Name: {transaction_data['data']['data']['recipient_name']}", 'green'))
+    print(colored(f"Amount: {transaction_data['data']['data']['amount']}", 'green'))
+    print(colored(f"Message: {transaction_data['data']['data']['message']}", 'green'))
+    
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

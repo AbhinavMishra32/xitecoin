@@ -103,6 +103,12 @@ class XiteUser(User):
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
 
+def make_node_block(json_data, client_user) -> Block:
+    sender_user = User(json_data["sender"], client_user.blockchain)
+    recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
+    node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
+    node_block = Block(node_data)
+    return node_block
 
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")

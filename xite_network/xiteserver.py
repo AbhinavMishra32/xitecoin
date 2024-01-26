@@ -18,7 +18,7 @@ def broadcast(message):
     try:
         for client_socket in clients:
             client_socket.send(message)
-            print(f"Message sent to {nicknames[client_socket]}")
+            print(colored(f"Message sent to {nicknames[client_socket]}", 'green'))
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
         
@@ -74,8 +74,8 @@ def handle_choice(client: socket.socket, data):
             client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
             return "MSG_MODE"
         if data["action"] == "BC_TRANSACTION_DATA":
-            print(" action: BC_TRANSACTION_DATA-------")
-            print(data["data"])
+            # print(" action: BC_TRANSACTION_DATA-------")
+            # print(data["data"])
             print("broadcasting the json")
             broadcast(json.dumps(data).encode())
         if data["action"] not in actions:
