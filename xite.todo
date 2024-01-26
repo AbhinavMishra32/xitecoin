@@ -1,16 +1,1 @@
-TODO: this is the current output:
-Server started...
-{'action': 'my action', 'message': 'No message', 'sender': 'Abhinav2', 'data': {}}
-Connected with ('127.0.0.1', 63703)
-Abhinav2 added to clients list
-{'sender': 'Abhinav1'}
-Connected with ('127.0.0.1', 63704)
-Abhinav1 added to clients list
-{'action': 'BC_TRANSACTION_DATA', 'sender': 'Abhinav1', 'data': {'prev_hash': 'c2efc6fac9bd405dab7a46da9d0289c0f9a95624dd05d1fc6c54cf8922c515f0', 'hash': '83126a4275ee60ebd872633752bea0577818948d4c15996e449a8e1b8b677dc7', 'data': {'sender_name': 'Abhinav2', 'recipient_name': 'Abhinav2', 'amount': 0, 'message': 'Abhinav2 gave Abhinav2 0 $XITE'}, 'timestamp': '26/01/2024 01:53:01', 'nonce': 27443}, 'bc_name': 'tb'}
-{'prev_hash': 'c2efc6fac9bd405dab7a46da9d0289c0f9a95624dd05d1fc6c54cf8922c515f0', 'hash': '83126a4275ee60ebd872633752bea0577818948d4c15996e449a8e1b8b677dc7', 'data': {'sender_name': 'Abhinav2', 'recipient_name': 'Abhinav2', 'amount': 0, 'message': 'Abhinav2 gave Abhinav2 0 $XITE'}, 'timestamp': '26/01/2024 01:53:01', 'nonce': 27443}
-Message sent to all clients
-{'sender': 'Abhinav1'}
-Message sent to all clients
-Message sent to all clients
-
-we have to fix abhinav2 to abhinav2 transaction and make it raju 0, going backwards in problem timeline but we have to unfortunetely solve this problem again.
+TODO: if nonce not present then put in buffer and mine and broadcast but if present then add to local blockchain

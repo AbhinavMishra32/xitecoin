@@ -3,6 +3,7 @@ from settings.settings import Settings
 import sqlite3
 import json
 
+
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
 
@@ -90,15 +91,25 @@ class XiteUser(User):
         # XiteUser.blockchain.verify_blockchain()
         
     
+    # @staticmethod
+    # def mine_block(json_data, client_user):
+    #     sender_user = User(json_data["sender"], client_user.blockchain)
+    #     recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
+    #     node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
+    #     node_block = Block(node_data)
+    #     XiteUser.save_block(client_user, node_block)
+    #     print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
+    #     Blockchain.verify_single_block(client_user.blockchain, node_block)
+    
+
     @staticmethod
-    def mine_block(json_data, client_user):
-        sender_user = User(json_data["sender"], client_user.blockchain)
-        recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
-        node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
-        node_block = Block(node_data)
-        XiteUser.save_block(client_user, node_block)
-        print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
-        Blockchain.verify_single_block(client_user.blockchain, node_block)
+    def mine_block(json_data, blockchain: Blockchain, user: 'User'):
+        #makes nonce for a transaction data (mining a block)
+        block = make_node_block(json_data, user)
+        blockchain.load_blockchain()
+        blockchain.add_block(block)
+        XiteUser.save_block(user, block)
+
 
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())

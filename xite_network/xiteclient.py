@@ -83,14 +83,16 @@ def cl_handle_json(client, data: dict):
             # XiteUser.save_block(client_user, node_block)
             # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
             # Blockchain.verify_single_block(client_user.blockchain, node_block)
-            add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-            print("Transaction buffer:")
-            # print(colored(len(TRANSACTION_BUFFER), 'green'))
-            for _ in TRANSACTION_BUFFER:
-                print("----Transaction Data----")
-                print_transaction_data(data)
-                print("--------------------")
-            print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+            if int(data["data"]["nonce"]) == 0:
+                print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
+                add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+                print("Transaction buffer:")
+                # print(colored(len(TRANSACTION_BUFFER), 'green'))
+                for _ in TRANSACTION_BUFFER:
+                    print("----Transaction Data----")
+                    print_transaction_data(data)
+                    print("--------------------")
+                print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
             # XiteUser.mine_block(data, client_user)
 
         else:

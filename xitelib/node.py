@@ -238,9 +238,7 @@ class User:
         if return_block:
             return new_block.to_dict()
             
-    def mine_block(self):
-        pass
-        # User this later for listening and broadcasting the blocks after mining from socket
+
         
 class InvalidTransactionException(Exception):
     pass
