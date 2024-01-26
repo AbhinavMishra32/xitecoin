@@ -1,3 +1,4 @@
+from http import client
 import socket
 import threading
 import json
@@ -18,7 +19,7 @@ def broadcast(message):
     try:
         for client_socket in clients:
             client_socket.send(message)
-            print(f"Message sent to {nicknames[clients.index(client_socket)]}")
+            print(f"Message sent to {nicknames[client_socket]}")
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
         
@@ -36,12 +37,10 @@ def handle(client: socket.socket):
         except Exception as e:
             print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
             if client.fileno() == -1:
-                # The client's socket has been closed
-                # index = clients.index(client)
-                # clients.remove(client)
-                # nickname = nicknames[index]
-                # broadcast(f"{client} left the network".encode())
-                # nicknames.remove(nickname)
+                # if client in clients:
+                #     clients.remove(client)
+                # if client in nicknames:
+                #     del nicknames[client]
                 break
             else:
                 # An exception occurred, but the client's socket is still open
@@ -56,20 +55,21 @@ def handle_choice(client: socket.socket, data):
         try:
             if data["action"] == "SENDER_NAME":
                 nickname = data["sender"]
-                if nickname in nicknames:
+                if nickname in nicknames.values():  # Check the values of the nicknames dictionary
                     # Find the old client with the same nickname
-                    old_client = next((c for c in clients if c.getpeername() != client.getpeername() and c.nickname == nickname), None)
+                    old_client = next((c for c in clients if c.getpeername() != client.getpeername() and nicknames[c] == nickname), None)
                     if old_client:
                         # Remove the old client
                         clients.remove(old_client)
                         del nicknames[old_client]
-                else:
-                    nicknames[client] = nickname
-                    print(f"{nickname} added to clients list")
+                # Add the new client, regardless of whether an old client was found
+                nicknames[client] = nickname
+                print(f"{nickname} added to clients list")
                 clients.append(client)
-                print(colored(f"NICKNAMES: {nicknames[client]}", 'yellow'))
+                print(colored(f"NICKNAMES: {nicknames[client]}", 'yellow'))  # Moved inside the else block
+                print(colored(f"NO. OF CLIENTS: {len(clients)}", 'yellow'))
         except Exception as e:
-            print(f"Error occured while appending client to clients list: {e}")
+            print(f"Error occured while appending client to clients list: {type(e).__name__}, {e.args}")
         client.send(json.dumps({"[Message from Server] Connected to the server": ""}).encode())
         if data["action"] == "SEND_BC":
             client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
