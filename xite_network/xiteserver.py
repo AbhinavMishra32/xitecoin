@@ -12,7 +12,7 @@ server.bind((HOST, PORT))
 server.listen()
 
 clients = []
-nicknames = []
+nicknames = {}
 
 def broadcast(message):
     try:
@@ -27,11 +27,14 @@ def handle(client: socket.socket):
     while True:
         try:
             data = client.recv(2024).decode()
+            if not data.strip():
+                break
             data_recvd = json.loads(data)
             handle_choice(client, data_recvd)
             # sent_data = json.dumps(data_recvd)
             # broadcast(data_recvd.encode())
-        except:
+        except Exception as e:
+            print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
             if client.fileno() == -1:
                 # The client's socket has been closed
                 # index = clients.index(client)
@@ -50,24 +53,26 @@ def handle_choice(client: socket.socket, data):
         print(colored(f"[CLIENT]: {data}", 'cyan'))
         print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
         actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA']
-        if data["action"] == "SENDER_NAME":
-            nickname = data["sender"]
-            if nickname in nicknames:
-                clients.remove(client)
-            else:
-                nicknames.append(nickname)
-                print(f"{nickname} added to clients list")
-            clients.append(client)
-
-            print(colored(f"NICKNAMES: {nicknames}", 'yellow'))
-            try:
-                pass
-            except Exception as e:
-                print(f"Error occured while appending client to clients list: {e}")
-        client.send(json.dumps({"[Message from Server] Connected to the server"}).encode())
-        
+        try:
+            if data["action"] == "SENDER_NAME":
+                nickname = data["sender"]
+                if nickname in nicknames:
+                    # Find the old client with the same nickname
+                    old_client = next((c for c in clients if c.getpeername() != client.getpeername() and c.nickname == nickname), None)
+                    if old_client:
+                        # Remove the old client
+                        clients.remove(old_client)
+                        del nicknames[old_client]
+                else:
+                    nicknames[client] = nickname
+                    print(f"{nickname} added to clients list")
+                clients.append(client)
+                print(colored(f"NICKNAMES: {nicknames[client]}", 'yellow'))
+        except Exception as e:
+            print(f"Error occured while appending client to clients list: {e}")
+        client.send(json.dumps({"[Message from Server] Connected to the server": ""}).encode())
         if data["action"] == "SEND_BC":
-            client.send(data.dumps({"Ok, send the blockchain"}).encode())
+            client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
             return "MSG_MODE"
         if data["action"] == "BC_TRANSACTION_DATA":
             print(" action: BC_TRANSACTION_DATA-------")
@@ -80,9 +85,8 @@ def handle_choice(client: socket.socket, data):
             print("broadcasting the json")
             broadcast(json.dumps(data).encode())
     except Exception as e:
-        print(colored(f"Error occurred while handling action: {e}", 'red'))
+        print(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
         print(colored(data, 'red'))
-        # pass
         # index = clients.index(client)
         # clients.remove(client)
         # client.close()
@@ -97,7 +101,7 @@ def recieve_old():
 
         client.send("NICK".encode())
         nickname  = client.recv(1024).decode()
-        nicknames.append(nickname)
+        nicknames.append(nickname) # type: ignore
         clients.append(client)
 
         print(f"Nickname of client is {nickname}")

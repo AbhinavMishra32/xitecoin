@@ -56,28 +56,35 @@ def recieve():
 def compare_length():
     pass
 
-def cl_handle_json(client, json):
+def cl_handle_json(client, data: dict):
     print("in cl_handle_json: ")
     try:
-        if json["sender"] not in nicknames:
-                nicknames.append(json["sender"])
-                #dbug
+        sender = data.get("sender")
+        if sender:
+            if sender not in nicknames:
+                nicknames.append(sender)
                 print("Nicknames stored:")
                 print(nicknames)
-                print(f"New user connected: {json['sender']}")
-        if json["action"] == "SEND_BC":
+                print(f"New user connected: {sender}")
+        else:
+            print("No sender specified")
+
+        action = data.get("action")
+        if action == "SEND_BC":
             print("Sending whole blockchain")
             send_whole_blockchain(client)
-        if json["action"] == "BC_TRANSACTION_DATA":
-            print("Got transaction data, here it is: \n" + json["data"])
+        elif action == "BC_TRANSACTION_DATA":
+            print("Got transaction data, here it is: \n" + json.dumps(data.get("data", "")))
         else:
             print("No action specified")
-            print(colored(json, 'light_grey'))
+            print(colored(data, 'light_grey'))
     except Exception as e:
         print(f"Error occurred while handling json: {e}")
-        print(colored(json, 'red'))
+        print(colored(data, 'red'))
 
 def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
+    if isinstance(data, set):
+        data = list(data)
     return json.dumps({"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
         
 #TODO: get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
@@ -176,7 +183,7 @@ if __name__ == "__main__":
     # tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
-    client.send(json.dumps({"sender": client_user.username, "action": "SENDER_NAME"}).encode())
+    client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
 
     write_thread = threading.Thread(target = write)
     write_thread.start()
