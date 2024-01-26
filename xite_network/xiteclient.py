@@ -1,6 +1,6 @@
 import socket
 import threading
-from xitelib.node import Blockchain, User
+from xitelib.node import Blockchain, User, Block, Data
 from xite_network.xiteuser import XiteUser
 import sys
 import json
@@ -57,7 +57,7 @@ def compare_length():
     pass
 
 def cl_handle_json(client, data: dict):
-    print("in cl_handle_json: ")
+    # print("in cl_handle_json: ")
     try:
         sender = data.get("sender")
         if sender:
@@ -67,19 +67,29 @@ def cl_handle_json(client, data: dict):
                 print(nicknames)
                 print(f"New user connected: {sender}")
         else:
-            print("No sender specified")
+            print(colored("No sender specified", 'light_red'))
 
         action = data.get("action")
         if action == "SEND_BC":
             print("Sending whole blockchain")
             send_whole_blockchain(client)
         elif action == "BC_TRANSACTION_DATA":
-            print("Got transaction data, here it is: \n" + json.dumps(data.get("data", "")))
+            # print("Got transaction data, here it is: \n" + json.dumps(data.get("data", "")))
+            # sender_user = User(data["sender"], client_user.blockchain)
+            # recp_user = User(data["data"]["data"]["recipient_name"], client_user.blockchain)
+            # node_data = Data(sender_user, recp_user, int(data["data"]["data"]["amount"]), data["data"]["data"]["message"], timestamp = data["data"]["timestamp"])
+            # node_block = Block(node_data)
+            # XiteUser.save_block(client_user, node_block)
+            # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
+            # Blockchain.verify_single_block(client_user.blockchain, node_block)
+
+            XiteUser.mine_block(data, client_user)
+
         else:
-            print("No action specified")
+            print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
     except Exception as e:
-        print(f"Error occurred while handling json: {e}")
+        print(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
         print(colored(data, 'red'))
 
 def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
@@ -106,7 +116,8 @@ def mine_block():
 def write():
     # print("write thread started")
     while True:
-        payment: str = input("Enter payment: ")
+        print("---------XITECOIN---------")
+        payment: str = input("\nEnter payment: ")
         recipient = payment.split(' ')[0]
         amount = int(payment.split(' ')[1])
 

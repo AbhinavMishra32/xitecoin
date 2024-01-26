@@ -1,4 +1,3 @@
-from http import client
 import socket
 import threading
 import json

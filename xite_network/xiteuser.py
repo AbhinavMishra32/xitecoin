@@ -1,4 +1,4 @@
-from xitelib.node import Blockchain, Data, User
+from xitelib.node import Blockchain, Data, User, Block
 from settings.settings import Settings
 import sqlite3
 import json
@@ -15,6 +15,7 @@ class XiteUser(User):
         super().__init__(username, blockchain)
         self.username = username
         self.password = password
+        self.blockchain = blockchain
 
     def login(self, username: str, password: str):
         conn = sqlite3.connect('users.db')
@@ -76,6 +77,33 @@ class XiteUser(User):
                 return True
         return False
     
+    @staticmethod
+    def save_block(XiteUser, block: Block):
+
+        with open(XiteUser.blockchain.file_path, 'r') as f:
+            blockchain_data = json.load(f)
+        blockchain_data.append(block.to_dict())
+        with open(XiteUser.blockchain.file_path, 'w') as f:
+            json.dump(blockchain_data, f, indent=4)
+
+        # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
+        # XiteUser.blockchain.verify_blockchain()
+        
+    
+    @staticmethod
+    def mine_block(json_data, client_user):
+        sender_user = User(json_data["sender"], client_user.blockchain)
+        recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
+        node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
+        node_block = Block(node_data)
+        XiteUser.save_block(client_user, node_block)
+        print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
+        Blockchain.verify_single_block(client_user.blockchain, node_block)
+
+def add_block_to_buffer(buffer_list, block: Block):
+    buffer_list.append(block.to_dict())
+
+
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")
     option = input("Does the user already exist? [y/n]: ")

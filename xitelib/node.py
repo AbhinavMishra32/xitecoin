@@ -32,8 +32,11 @@ HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different ti
 BLOCK_REWARD = 2.5
 
 class Data:
-    def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str):
-        self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    def __init__(self, sender: 'User', recipient: 'User', amount: int, message: str, timestamp = None):
+        if timestamp is None:
+            self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        else:
+            self.timestamp = timestamp
         self.sender = sender
         self.recipient = recipient
         self.amount = amount
@@ -173,10 +176,16 @@ class Blockchain:
                 print(f"BLOCK [{i}] VERIFIED!")
                 i += 1
 
+    @staticmethod
+    def verify_single_block(blockchain: 'Blockchain', block: 'Block'):
+        if not blockchain.verify_PoW_singlePass(block):
+                raise ValueError("Invalid blockchain: hash does not match!")
+        else:
+            print("BLOCK VERIFIED!")
+
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
-
 
 class User:
     def __init__(self, name: str, blockchain: "Blockchain"):
