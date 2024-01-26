@@ -62,10 +62,8 @@ class XiteUser(User):
         print("User created successfully")
         return True
     
-    def nwtransaction(self, recipient: User, amount: int, save: bool = True) -> dict:
-        super().transaction(recipient, amount, save)
-        json_data = self.blockchain.chain[-1].to_dict()
-        return json_data
+    def nwtransaction(self, recipient: User, amount: int, save: bool = True, return_block: bool = False, return_data: bool = False):
+        return super().transaction(recipient, amount, save, return_block=return_block, return_data=return_data)
     
     def user_exists(self, username) -> bool:
         # blockchain = Blockchain(self.blockchain.name)

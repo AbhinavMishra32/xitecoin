@@ -1,9 +1,10 @@
 import socket
 import threading
 from xitelib.node import Blockchain, User
-from .xiteuser import XiteUser
+from xite_network.xiteuser import XiteUser
 import sys
 import json
+from termcolor import colored
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(("localhost", 12345))
@@ -56,10 +57,13 @@ def compare_length():
     pass
 
 def cl_handle_json(client, json):
+    print("in cl_handle_json: ")
     try:
         if json["sender"] not in nicknames:
                 nicknames.append(json["sender"])
                 #dbug
+                print("Nicknames stored:")
+                print(nicknames)
                 print(f"New user connected: {json['sender']}")
         if json["action"] == "SEND_BC":
             print("Sending whole blockchain")
@@ -68,9 +72,10 @@ def cl_handle_json(client, json):
             print("Got transaction data, here it is: \n" + json["data"])
         else:
             print("No action specified")
-            print(json)
+            print(colored(json, 'light_grey'))
     except Exception as e:
         print(f"Error occurred while handling json: {e}")
+        print(colored(json, 'red'))
 
 def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
     return json.dumps({"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
@@ -84,34 +89,24 @@ def send_whole_blockchain(client):
 
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
-    client_user.nwtransaction(recp_user, amount, save = False)
-    return client_user.blockchain.chain[-1].to_dict()
+    return client_user.nwtransaction(recp_user, amount, save = False, return_block = True)
+    # return client_user.blockchain.chain[-1].to_dict()
 
 def mine_block():
     pass
 
-def send_msg():
-    while True:
-        try:
-            message = input("Enter your message: ")
-            client.send(json.dumps(message).encode())
-            if message == "DISCONNECT":
-                client.close()
-                break
-        except Exception as e:
-            print(f"Error occurred: {e}")
-            break
 
 def write():
+    # print("write thread started")
     while True:
-        client.send(json.dumps({"sender": client_user.username}).encode())
         payment: str = input("Enter payment: ")
         recipient = payment.split(' ')[0]
         amount = int(payment.split(' ')[1])
 
         send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username)
-        print(send_data)
+        print(colored(send_data, "yellow"))
         client.send(send_data.encode())
+        print("Sent transaction data")
         # if client_user.user_exists(recipient):
         #     print("User exists")
         #     recp_user = User(recipient,client_user.blockchain)
@@ -125,9 +120,12 @@ def write():
         
         # data = [block.to_dict() for block in client_user.blockchain.chain]
         # json_test = json.dumps({"message": {"hello":"hello1"}, "sender": client_user.username, "data": {"test": "data"}})
-        # json_test = make_json({"hello":"hello1"}, client_user.username, "TEST")
-        # print(json_test)
-        # print("Sent message!")
+    # json_test = make_json(sender = client_user.username,action = "test action", data = {"hello":"hello1"})
+    # client.send(json_test.encode())
+    # print(json_test)
+    # print("Sent message!")
+    while True:
+        pass
 
 def send_message(action: str, message):
     message_dict = json.loads(message)
@@ -142,21 +140,26 @@ def send_message(action: str, message):
 
 def recv_msg():
     while True:
+        data = "DEFAULT DATA"
         try:
-            data = client.recv(2024).decode().strip().replace('\n', '')
+            # print("recieving data")
+            # data = client.recv(2024).decode().strip().replace('\n', '')
+            data = client.recv(10024).decode()
+            # print(data)
             data_json = json.loads(data)
-            print(data_json)
+            print(colored(data_json, 'cyan'))
             if data:
-                print(data_json)
+                # print(data_json)
                 cl_handle_json(client, data_json)
             else:
                 print("No data received")
         except Exception as e:
-            print(f"Error occurred: {e}")
+            print(colored(f"Error occurred while recieving message: {e}", 'red'))
+            # print(colored(data, 'red'))
             break
-        finally:
-            print("actual data recieved:")
-            print(data)
+        # finally:
+        #     print("actual data recieved:")
+        #     print(data)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -167,29 +170,35 @@ if __name__ == "__main__":
     password = sys.argv[2]
 
     tb = Blockchain("tb")
-    tb.load_blockchain()
-    tb.verify_blockchain()
+    # tb.load_blockchain()
+    # tb.verify_blockchain()
 
     # tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
+    client.send(json.dumps({"sender": client_user.username, "action": "SENDER_NAME"}).encode())
 
-    if client_user.username == "Abhinav1":
-        # send_message("my action",json.dumps({"testing":"tested"}))
-        # sdata = make_json(data = client_user.nwtransaction(client_user, 0, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
-        # print(sdata)
-        # client.send(sdata.encode())
-        # print("Sent transaction data")
-        write_thread = threading.Thread(target = write)
-        write_thread.start()
-    else:
-        print("Not Abhinav1 so not sending transaction data, only recieving")
-        client.send(make_json(json.dumps({"testing":"tested"})).encode())
-    # tb.save_blockchain()
+    write_thread = threading.Thread(target = write)
+    write_thread.start()
+    recieve_thread = threading.Thread(target = recv_msg)
+    recieve_thread.start()
+
+
+    # if client_user.username == "Abhinav1":
+    #     # send_message("my action",json.dumps({"testing":"tested"}))
+    #     # sdata = make_json(data = client_user.nwtransaction(client_user, 0, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
+    #     # print(sdata)
+    #     # client.send(sdata.encode())
+    #     # print("Sent transaction data")
+    #     write_thread = threading.Thread(target = write)
+    #     write_thread.start()
+    # else:
+    #     print("Not Abhinav1 so not sending transaction data, only recieving")
+    #     client.send(make_json(json.dumps({"testing":"tested"})).encode())
+    # # tb.save_blockchain()
 
     # write_thread = threading.Thread(target = write)
     # write_thread.start()
 
-    recieve_thread = threading.Thread(target = recv_msg)
-    recieve_thread.start()
+
     

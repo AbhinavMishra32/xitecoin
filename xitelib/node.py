@@ -201,8 +201,10 @@ class User:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
         return signature
     
+    # def to_dict(self) ->list:
+    #     return [block.to_dict() for block in self.chain]
 
-    def transaction(self, recipient: "User", amount: int, save = True) -> Data:
+    def transaction(self, recipient: "User", amount: int, save = True, return_block = False, return_data = False) -> Data | dict | None:
         """
         Returns Data and also adds new Block to the Blockchain automatically.
         """
@@ -222,13 +224,18 @@ class User:
                 print("Transaction was verified! ")
             else: 
                 print("Transaction was not able to be verified!")
-        return transaction_data
-
-
+        if return_data:
+            return transaction_data
+        if return_block:
+            return new_block.to_dict()
+            
     def mine_block(self):
         pass
         # User this later for listening and broadcasting the blocks after mining from socket
         
+
+# def to_dict(tr) ->list:
+#     return [dict(to_dict(tr))]
 
 if __name__ == "__main__":
     pass
