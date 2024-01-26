@@ -143,7 +143,7 @@ def send_message(action: str, message):
 def recv_msg():
     while True:
         try:
-            data = client.recv(2024).decode()
+            data = client.recv(2024).decode().strip().replace('\n', '')
             data_json = json.loads(data)
             print(data_json)
             if data:
@@ -154,6 +154,9 @@ def recv_msg():
         except Exception as e:
             print(f"Error occurred: {e}")
             break
+        finally:
+            print("actual data recieved:")
+            print(data)
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
@@ -181,14 +184,12 @@ if __name__ == "__main__":
         write_thread.start()
     else:
         print("Not Abhinav1 so not sending transaction data, only recieving")
-        send_message("my action",json.dumps({"testing":"tested"}))
+        client.send(make_json(json.dumps({"testing":"tested"})).encode())
     # tb.save_blockchain()
-    while True:
-        pass
 
     # write_thread = threading.Thread(target = write)
     # write_thread.start()
 
-    recieve_thread = threading.Thread(target = recieve_dbug)
+    recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
     
