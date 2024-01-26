@@ -28,7 +28,6 @@ def handle(client: socket.socket):
         try:
             data = client.recv(2024).decode()
             data_recvd = json.loads(data)
-            print(colored(f"[CLIENT]: {data_recvd}", 'cyan'))
             handle_choice(client, data_recvd)
             # sent_data = json.dumps(data_recvd)
             # broadcast(data_recvd.encode())
@@ -48,13 +47,13 @@ def handle(client: socket.socket):
 
 def handle_choice(client: socket.socket, data):
     try:
-        # choice = client.recv(1024).decode()
-        actions = ('SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA')
+        print(colored(f"[CLIENT]: {data}", 'cyan'))
+        print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
+        actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA']
         if data["action"] == "SENDER_NAME":
             nickname = data["sender"]
             if nickname in nicknames:
                 clients.remove(client)
-                nicknames.remove(nickname)
             else:
                 nicknames.append(nickname)
                 print(f"{nickname} added to clients list")
