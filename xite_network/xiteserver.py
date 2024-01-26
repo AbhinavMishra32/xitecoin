@@ -14,9 +14,9 @@ nicknames = []
 
 def broadcast(message):
     try:
-        for client in clients:
-            client.send(message)
-        print("Message sent to all clients")
+        for client_socket in clients:
+            client_socket.send(message)
+            print(f"Message sent to {nicknames[clients.index(client_socket)]}")
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
 
@@ -52,14 +52,17 @@ def handle_choice(client: socket.socket, json):
             return "MSG_MODE"
         if json["action"] == "BC_TRANSACTION_DATA":
             print(json["data"])
-        
+        else:
+            print("No action specified, so here is the original json:")
+            print(json)
     except:
-        index = clients.index(client)
-        clients.remove(client)
-        client.close()
-        nickname = nicknames[index]
-        broadcast(f"{nickname} left the network".encode())
-        nicknames.remove(nickname)
+        pass
+        # index = clients.index(client)
+        # clients.remove(client)
+        # client.close()
+        # nickname = nicknames[index]
+        # broadcast(f"{nickname} left the network".encode())
+        # nicknames.remove(nickname)
 
 def recieve_old():
     while True:
