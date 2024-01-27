@@ -104,7 +104,7 @@ class XiteUser(User):
 
     @staticmethod
     def mine_block(json_data, blockchain: Blockchain, user: 'User'):
-        #makes nonce for a transaction data (mining a block)
+        """makes nonce for a transaction data (mining a block)"""
         block = make_node_block(json_data, user)
         blockchain.load_blockchain()
         blockchain.add_block(block)
@@ -120,6 +120,8 @@ def make_node_block(json_data, client_user) -> Block:
     node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
     node_block = Block(node_data)
     return node_block
+
+
 
 def create_user() -> XiteUser | None:
     print("-----Login/Signup-----")

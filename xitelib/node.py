@@ -166,15 +166,22 @@ class Blockchain:
         else:
             return False
 
-    def verify_blockchain(self):
+    def verify_blockchain(self) -> bool:
         i = 0
-        print("VERIFYING BLOCKCHAIN: ")
+        print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
+        m = True
         for block in range(1, len(self.chain)):
             if not self.verify_PoW_singlePass(self.chain[block]):
+                m = False
                 raise ValueError("Invalid blockchain: hash does not match!")
             else:
                 print(f"BLOCK [{i}] VERIFIED!")
                 i += 1
+        if m:
+            print("BLOCKCHAIN VERIFIED!")
+        else:
+            print("BLOCKCHAIN NOT VERIFIED!")
+        return m
 
     @staticmethod
     def verify_single_block(blockchain: 'Blockchain', block: 'Block'):

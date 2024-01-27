@@ -50,7 +50,7 @@ def handle_choice(client: socket.socket, data):
     try:
         print(colored(f"[CLIENT]: {data}", 'cyan'))
         print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
-        actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA']
+        actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC']
         try:
             if data["action"] == "SENDER_NAME":
                 nickname = data["sender"]
@@ -78,6 +78,10 @@ def handle_choice(client: socket.socket, data):
             # print(data["data"])
             print("broadcasting the json")
             broadcast(json.dumps(data).encode())
+        if data["action"] == "SYNC_BC":
+            print("broadcasting json for synchronizing blockchain")
+            broadcast(json.dumps(data).encode())
+
         if data["action"] not in actions:
             print(colored("No valid action specified, so here is the original json:", 'light_red'))
             print(colored(data, 'light_red'))

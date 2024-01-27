@@ -74,27 +74,59 @@ def cl_handle_json(client, data: dict):
         if action == "SEND_BC":
             print("Sending whole blockchain")
             send_whole_blockchain(client)
+        elif action == "SYNC_BC":
+            print("Received latest blockchain from server")
+            received_blockchain = Blockchain(data["data"]["name"])
+            if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+                if received_blockchain.verify_blockchain():
+                    print("Blockchain verification successful")
+                    # consensus algorithm:
+                    if len(received_blockchain.chain) > len(client_user.blockchain.chain):
+                        client_user.blockchain = received_blockchain
+                        print("Blockchain updated with longer chain from server")
+                    received_blockchain.save_blockchain()
+                    print("Blockchain saved successfully")
+                else:
+                    print("Error occurred while verifying blockchain")
+            else:
+                print("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
-            # print("Got transaction data, here it is: \n" + json.dumps(data.get("data", "")))
-            # sender_user = User(data["sender"], client_user.blockchain)
-            # recp_user = User(data["data"]["data"]["recipient_name"], client_user.blockchain)
-            # node_data = Data(sender_user, recp_user, int(data["data"]["data"]["amount"]), data["data"]["data"]["message"], timestamp = data["data"]["timestamp"])
-            # node_block = Block(node_data)
-            # XiteUser.save_block(client_user, node_block)
-            # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
-            # Blockchain.verify_single_block(client_user.blockchain, node_block)
             if int(data["data"]["nonce"]) == 0:
                 print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
                 add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-                print("Transaction buffer:")
-                # print(colored(len(TRANSACTION_BUFFER), 'green'))
-                for _ in TRANSACTION_BUFFER:
+                print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                for transaction in TRANSACTION_BUFFER:
                     print("----Transaction Data----")
-                    print_transaction_data(data)
+                    # print(transaction)
+                    print_transaction_data(transaction)
+                    # else:
+                    #     print("Transaction does not contain 'sender' key")
+                    # print_transaction_data(data)
                     print("--------------------")
                 print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
-            # XiteUser.mine_block(data, client_user)
+            else:
+                #checking if block is correct or not:
+                print("Checking block validity:")
+                block = make_node_block(data, client_user)
+                if client_user.blockchain.verify_PoW_singlePass(block):
+                    print(colored("Block is valid", 'light_green'))
+                    print(colored("Saving block", 'light_green'))
+                    XiteUser.save_block(client_user, block)
+                    print(colored("Block saved successfully", 'light_green'))
+                    print(colored("Verifying blockchain", 'light_green'))
+                    if client_user.blockchain.verify_blockchain():
+                        print(colored("Blockchain verified successfully", 'light_green'))
+                    else:
+                        print(colored("Blockchain verification failed", 'light_red'))
+                        print("Requesting latest blockchain from other nodes")
+                        synchronize_blockchain(client_user, client_user.blockchain)
+                        
 
+                    # print(colored("Broadcasting block", 'green'))
+                    # broadcast(json.dumps(data).encode())
+                    # print(colored("Block broadcasted successfully", 'green'))
+                
+            # XiteUser.mine_block(data, client_user)
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
@@ -126,6 +158,27 @@ def make_block(recipient: str, amount: int):
 def mine_block():
     pass
 
+def synchronize_blockchain(user: XiteUser, blockchain: Blockchain):
+    d = make_json({"Sync Blockchain": "Sync Blockchain"}, user.username, "SYNC_BC")
+    client.send(d.encode())
+    pass
+
+def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> bool:
+    try:
+        blockchain.chain = []
+        for block in blockchain_data:
+            sender = User(block['data']['sender_name'], blockchain)
+            recipient = User(block['data']['recipient_name'], blockchain)
+            data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
+            new_block = Block(data, block['nonce'])
+            new_block.hash = new_block.hash_block()
+            if len(blockchain.chain) > 0:
+                new_block.prev_hash = blockchain.chain[-1].hash
+            blockchain.chain.append(new_block)
+        return True
+    except Exception as e:
+        print(f"Failed to synchronize blockchain [{colored("load_blockchain_from_data", 'light_magenta')}]: {e}")
+        return False
 
 def write():
     # print("write thread started")
@@ -196,21 +249,19 @@ def recv_msg():
 
 
 def print_transaction_data(transaction_data):
-    print(colored("\nTransaction Data:", 'yellow'))
-    print(colored(f"Action: {transaction_data['action']}", 'green'))
-    print(colored(f"Sender: {transaction_data['sender']}", 'green'))
-    print(colored(f"Blockchain Name: {transaction_data['bc_name']}", 'green'))
-    print(colored("\nBlock Data:", 'yellow'))
-    print(colored(f"Previous Hash: {transaction_data['data']['prev_hash']}", 'green'))
-    print(colored(f"Hash: {transaction_data['data']['hash']}", 'green'))
-    print(colored(f"Timestamp: {transaction_data['data']['timestamp']}", 'green'))
-    print(colored(f"Nonce: {transaction_data['data']['nonce']}", 'green'))
-    print(colored("\nTransaction Details:", 'yellow'))
-    print(colored(f"Sender Name: {transaction_data['data']['data']['sender_name']}", 'green'))
-    print(colored(f"Recipient Name: {transaction_data['data']['data']['recipient_name']}", 'green'))
-    print(colored(f"Amount: {transaction_data['data']['data']['amount']}", 'green'))
-    print(colored(f"Message: {transaction_data['data']['data']['message']}", 'green'))
-    
+    try:
+        print(colored("\nBlock Data:", 'yellow'))
+        print(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'))
+        print(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'))
+        print(colored(f"Timestamp: {transaction_data['timestamp']}", 'light_cyan'))
+        print(colored(f"Nonce: {transaction_data['nonce']}", 'light_cyan'))
+        print(colored("\nTransaction Details:", 'yellow'))
+        print(colored(f"Sender Name: {transaction_data['data']['sender_name']}", 'light_cyan'))
+        print(colored(f"Recipient Name: {transaction_data['data']['recipient_name']}", 'light_cyan'))
+        print(colored(f"Amount: {transaction_data['data']['amount']}", 'light_cyan'))
+        print(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'))
+    except:
+        print(colored("Error occurred while printing transaction data", 'red'))
 
 
 if __name__ == "__main__":
