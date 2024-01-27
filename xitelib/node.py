@@ -56,6 +56,9 @@ class Block:
     def __str__(self):
         return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
 
+    def is_mined(self) -> bool:
+        return self.hash[:DIFFICULITY] == DIFFICULITY*"0"
+
     def to_dict(self):
         return {
             'prev_hash': self.prev_hash,
@@ -143,12 +146,13 @@ class Blockchain:
         
         return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
 
-    def add_block(self, block: 'Block'):
+    def add_block(self, block: 'Block') -> bool:
         if len(self.chain) > 0:
             block.prev_hash = self.chain[-1].hash
         nonce = self.proof_of_work(block)
         block.nonce = nonce
         self.chain.append(block)
+        return block.is_mined()
 
     def verify_block(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")

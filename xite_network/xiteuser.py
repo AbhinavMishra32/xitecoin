@@ -2,11 +2,14 @@ from xitelib.node import Blockchain, Data, User, Block
 from settings.settings import Settings
 import sqlite3
 import json
-
-
+from termcolor import colored
+from xiteclient import synchronize_blockchain
+import threading
+import asyncio
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
-
+class BlockMiningFailedException(Exception):
+    pass
 
 class XiteUser(User):
     '''
@@ -78,14 +81,19 @@ class XiteUser(User):
                 return True
         return False
     
-    @staticmethod
-    def save_block(XiteUser, block: Block):
-
-        with open(XiteUser.blockchain.file_path, 'r') as f:
-            blockchain_data = json.load(f)
-        blockchain_data.append(block.to_dict())
-        with open(XiteUser.blockchain.file_path, 'w') as f:
-            json.dump(blockchain_data, f, indent=4)
+    # @staticmethod
+    # def save_block(XiteUser: 'XiteUser', block: Block) -> bool:
+    #     """saves the block to the blockchain file"""
+    #     try:         
+    #         with open(XiteUser.blockchain.file_path, 'r') as f:
+    #             blockchain_data = json.load(f)
+    #         blockchain_data.append(block.to_dict())
+    #         with open(XiteUser.blockchain.file_path, 'w') as f:
+    #             json.dump(blockchain_data, f, indent=4)
+    #         return True
+    #     except Exception as e:
+    #         print(f"Error occured while saving block: {e}")
+    #         return False
 
         # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
         # XiteUser.blockchain.verify_blockchain()
@@ -102,13 +110,99 @@ class XiteUser(User):
     #     Blockchain.verify_single_block(client_user.blockchain, node_block)
     
 
+    # @staticmethod
+    # def mine_block(json_data, blockchain: Blockchain, user: 'XiteUser'):
+    #     """makes nonce for a transaction data (mining a block)"""
+    #     block = make_node_block(json_data, user)
+    #     blockchain.load_blockchain()
+    #     print(f"Mining block... [{colored("[mine_block]", 'magenta')}]")
+    #     if blockchain.add_block(block):
+    #         print(colored("Block mined successfully", 'light_green'))
+    #         print(colored("Saving block", 'light_green'))
+    #         XiteUser.save_block(user, block)
+    #         if user.blockchain.verify_blockchain():
+    #             print(colored("Blockchain verified successfully", 'light_green'))
+    #         else:
+    #             print(colored("Blockchain verification failed after [client_user.blockchain.verify_blockchain()]", 'light_red'))
+    #             print("Requesting latest blockchain from other nodes")
+    #             synchronize_blockchain(user, user.blockchain)
+    #     else:
+    #         raise Exception("Block mining failed")
+
+
+    # @staticmethod
+    # def process_mined_block(data: Block, client_user: 'XiteUser'):
+    #     """processes the mined block"""
+    #     print("Checking block validity:")
+    #     block = make_node_block(data, client_user)
+    #     if client_user.blockchain.verify_PoW_singlePass(block):
+    #         print(colored("BLOCK IS ALREADY MINED, SO NOW SAVING THE BLOCK", 'light_green'))
+    #         XiteUser.save_block(client_user, block)
+    #         print(colored("BLOCK SAVED, NOW VERIFYING BLOCKCHAIN", 'light_green'))
+    #         if client_user.blockchain.verify_blockchain():
+    #             print(colored("Blockchain verified successfully", 'light_green'))
+    #         else:
+    #             print(colored("Blockchain verification failed in [client_user.blockchain.verify_blockchain()]", 'light_red'))
+    #             print("Requesting latest blockchain from other nodes")
+    #             synchronize_blockchain(client_user, client_user.blockchain)
+    #     else:
+    #         print(colored("Block is invalid", 'light_red'))
+    #         print("Requesting latest blockchain from other nodes")
+    #         synchronize_blockchain(client_user, client_user.blockchain)
+        
+
     @staticmethod
-    def mine_block(json_data, blockchain: Blockchain, user: 'User'):
-        """makes nonce for a transaction data (mining a block)"""
+    async def mine_block(json_data, user: 'XiteUser') -> Block:
+        """Create a new block and add it to the blockchain."""
         block = make_node_block(json_data, user)
-        blockchain.load_blockchain()
-        blockchain.add_block(block)
-        XiteUser.save_block(user, block)
+        if not user.blockchain.add_block(block):
+            print(colored("Block mined successfully!", 'light_green'))
+            return block
+        else:
+            raise BlockMiningFailedException("Failed to add block to blockchain")
+
+    @staticmethod
+    def save_block(user: 'XiteUser', block: Block):
+        """Save a block."""
+        print(colored("Saving block", 'light_green'))
+        try:         
+            with open(user.blockchain.file_path, 'r') as f:
+                blockchain_data = json.load(f)
+            blockchain_data.append(block.to_dict())
+            with open(user.blockchain.file_path, 'w') as f:
+                json.dump(blockchain_data, f, indent=4)
+            return True
+        except Exception as e:
+            print(f"Error occured while saving block: {e}")
+            return False
+
+    @staticmethod
+    def verify_blockchain(user: 'XiteUser'):
+        """Verify the blockchain."""
+        print(colored("Verifying blockchain", 'light_green'))
+        if not user.blockchain.verify_blockchain():
+            print(colored("Blockchain verification failed", 'light_red'))
+            print("Requesting latest blockchain from other nodes")
+            synchronize_blockchain(user, user.blockchain)
+        else:
+            print(colored("Blockchain verified successfully", 'light_green'))
+
+    @staticmethod
+    async def process_mined_block(un_mined_block: Block, user: 'XiteUser'):
+        """Process a mined block."""
+        print("Mining block...")
+        def mine_and_process_block():
+            print("Mining block...")
+            try:
+                mined_block = asyncio.run(XiteUser.mine_block(un_mined_block, user))
+                print(colored("Block mined successfully", 'light_green'))
+                XiteUser.save_block(user, mined_block)
+                XiteUser.verify_blockchain(user)
+            except BlockMiningFailedException:
+                print(colored("Block mining failed", 'light_red'))
+        threading.Thread(target=mine_and_process_block).start()
+
+
 
 
 def add_block_to_buffer(buffer_list, block: Block):
@@ -118,7 +212,7 @@ def make_node_block(json_data, client_user) -> Block:
     sender_user = User(json_data["sender"], client_user.blockchain)
     recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
     node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
-    node_block = Block(node_data)
+    node_block = Block(node_data, int(json_data["nonce"]))
     return node_block
 
 

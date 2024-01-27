@@ -1,3 +1,4 @@
+from multiprocessing import process
 from re import T
 import socket
 import threading
@@ -91,42 +92,25 @@ def cl_handle_json(client, data: dict):
             else:
                 print("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
-            if int(data["data"]["nonce"]) == 0:
+            block = make_node_block(data, client_user)
+            if not block.is_mined(): # block isnt mined yet
                 print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
                 add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
                 print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                i = 0
                 for transaction in TRANSACTION_BUFFER:
+                    i += 1
                     print("----Transaction Data----")
-                    # print(transaction)
+                    print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
                     print_transaction_data(transaction)
-                    # else:
-                    #     print("Transaction does not contain 'sender' key")
-                    # print_transaction_data(data)
                     print("--------------------")
                 print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+
+                print("NOW MINING BLOCK: ")
+                await XiteUser.process_mined_block(block, client_user)
             else:
                 #checking if block is correct or not:
-                print("Checking block validity:")
-                block = make_node_block(data, client_user)
-                if client_user.blockchain.verify_PoW_singlePass(block):
-                    print(colored("Block is valid", 'light_green'))
-                    print(colored("Saving block", 'light_green'))
-                    XiteUser.save_block(client_user, block)
-                    print(colored("Block saved successfully", 'light_green'))
-                    print(colored("Verifying blockchain", 'light_green'))
-                    if client_user.blockchain.verify_blockchain():
-                        print(colored("Blockchain verified successfully", 'light_green'))
-                    else:
-                        print(colored("Blockchain verification failed", 'light_red'))
-                        print("Requesting latest blockchain from other nodes")
-                        synchronize_blockchain(client_user, client_user.blockchain)
-                        
-
-                    # print(colored("Broadcasting block", 'green'))
-                    # broadcast(json.dumps(data).encode())
-                    # print(colored("Block broadcasted successfully", 'green'))
-                
-            # XiteUser.mine_block(data, client_user)
+                XiteUser.process_mined_block(block, client_user)
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
