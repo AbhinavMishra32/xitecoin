@@ -1,50 +1,38 @@
 [
     {
         "prev_hash": "",
-        "hash": "15f0361d15c44fc58a47609223937babbc307b6f42555ced3270157acbbcdcb0",
+        "hash": "xite",
         "data": {
             "sender_name": "Genesis",
             "recipient_name": "Genesis",
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "23/01/2024 21:41:01",
+        "timestamp": "28/01/2024 00:33:21",
         "nonce": 32
     },
     {
-        "prev_hash": "15f0361d15c44fc58a47609223937babbc307b6f42555ced3270157acbbcdcb0",
-        "hash": "a92c87b182c335d0e337170e06dce81b8ba7fc90851587fc56d07a8d94ee4810",
-        "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "raju",
-            "amount": 0,
-            "message": "Abhinav1 gave raju 0 $XITE"
-        },
-        "timestamp": "28/01/2024 00:04:09",
-        "nonce": 57213
-    },
-    {
-        "prev_hash": "a92c87b182c335d0e337170e06dce81b8ba7fc90851587fc56d07a8d94ee4810",
-        "hash": "46c8697f0755e716112a8a4a845918fd70d92039dee62297439c55e2781eaf6d",
+        "prev_hash": "xite",
+        "hash": "84f134e7be3105c13c68fd9f1f18b60a50a86230643c97945b7fadc0cf0f1d49",
         "data": {
             "sender_name": "Abhinav2",
-            "recipient_name": "raju",
+            "recipient_name": "raj",
             "amount": 0,
-            "message": "Abhinav2 gave raju 0 $XITE"
+            "message": "Abhinav2 gave raj 0 $XITE"
         },
-        "timestamp": "28/01/2024 00:04:17",
-        "nonce": 141333
+        "timestamp": "28/01/2024 00:33:23",
+        "nonce": 56586
     },
     {
-        "prev_hash": "46c8697f0755e716112a8a4a845918fd70d92039dee62297439c55e2781eaf6d",
-        "hash": "cb8d9b4485f48b2200fd403d303cdccd7fab2cdf8e79caf1aaeaa9d7f45a1dcd",
+        "prev_hash": "84f134e7be3105c13c68fd9f1f18b60a50a86230643c97945b7fadc0cf0f1d49",
+        "hash": "dc391ca6055dcbb26cd7a0aba9d8edf960a3f7af061d0d10c6d0d0ab66375620",
         "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "rinki",
+            "sender_name": "Abhinav2",
+            "recipient_name": "asdf",
             "amount": 0,
-            "message": "Abhinav1 gave rinki 0 $XITE"
+            "message": "Abhinav2 gave asdf 0 $XITE"
         },
-        "timestamp": "28/01/2024 00:04:27",
-        "nonce": 59351
+        "timestamp": "28/01/2024 00:33:46",
+        "nonce": 174031
     }
 ]

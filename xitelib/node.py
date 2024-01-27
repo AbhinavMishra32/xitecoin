@@ -46,7 +46,7 @@ class Data:
     def __str__(self):
         return self.message
 class Block:
-    def __init__(self, data: Data, nonce: int = 0, prev_hash = None):
+    def __init__(self, data: Data, nonce: int = 0, prev_hash = None, hash = None):
         self.merkel_root = ""
         if prev_hash is None:
             self.prev_hash = ""
@@ -55,7 +55,10 @@ class Block:
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         self.data = data
         self.nonce = nonce
-        self.hash = self.hash_block()
+        if hash is None:
+            self.hash = self.hash_block()
+        else:
+            self.hash = hash
 
     def __str__(self):
         return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
@@ -78,8 +81,8 @@ class Block:
             # print("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
-            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}" #old
-            # data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}"
+            # data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}" #old
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}"
             return hashlib.sha256(data_string.encode()).hexdigest()
         
 class Blockchain:
@@ -195,7 +198,7 @@ class Blockchain:
         for block in range(i, len(self.chain)):
             if not self.verify_PoW_singlePass(self.chain[block]):
                 m = False
-                raise InvalidBlockchainException(f"Hash of block {[i]} does not match!")
+                raise InvalidBlockchainException(f"Hash of block [{i}] does not match!")
             else:
                 print(f"BLOCK [{i}] VERIFIED!")
                 i += 1

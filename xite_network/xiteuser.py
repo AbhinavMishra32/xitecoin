@@ -146,7 +146,7 @@ class XiteUser(User):
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
 
-def make_node_block(json_data: dict, client_user, prev_hash = None) -> Block:
+def make_node_block(json_data: dict, client_user, prev_hash = None, hash = None) -> Block:
 
     sender = json_data["data"]["data"].get("sender_name")
     if sender is None:
@@ -161,7 +161,7 @@ def make_node_block(json_data: dict, client_user, prev_hash = None) -> Block:
     timestamp = json_data["data"].get("timestamp")
     node_data = Data(sender_user, recp_user, amount, message, timestamp=timestamp)
     nonce = int(json_data["data"].get("nonce"))
-    node_block = Block(node_data, nonce, prev_hash)
+    node_block = Block(node_data, nonce, prev_hash, hash)
     return node_block
 
 

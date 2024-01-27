@@ -1,1 +1,3 @@
 TODO: send the prev hash of ur transaction from the prev block in ur local blockchain, then send the transaction having prev hash with working nonce of that prev hash and current hash then on another user's side see if the prev hash matches ur local blockchain's prev hash, if doesnt then sync blockchain
+
+TODO: for the same hash the nonce should be same as it was before in node.py fix that, the nonce should be same for the same transaction (hash of it)

@@ -37,10 +37,6 @@ def handle(client: socket.socket):
         except Exception as e:
             print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
             if client.fileno() == -1:
-                # if client in clients:
-                #     clients.remove(client)
-                # if client in nicknames:
-                #     del nicknames[client]
                 break
             else:
                 # An exception occurred, but the client's socket is still open
@@ -101,23 +97,6 @@ def handle_choice(client: socket.socket, data):
         # nickname = nicknames[index]
         # broadcast(f"{nickname} left the network".encode())
         # nicknames.remove(nickname)
-
-def recieve_old():
-    while True:
-        client, address = server.accept()
-        print(f"Connected with {str(address)}")
-
-        client.send("NICK".encode())
-        nickname  = client.recv(1024).decode()
-        nicknames.append(nickname) # type: ignore
-        clients.append(client)
-
-        print(f"Nickname of client is {nickname}")
-        broadcast(f"{nickname} joined the chat!".encode())
-        client.send("Connected to the server".encode())
-
-        thread = threading.Thread(target = handle, args = (client,))
-        thread.start()
 
 def recieve():
     try:
