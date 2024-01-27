@@ -78,7 +78,8 @@ class Block:
             # print("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
-            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}"
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}" #old
+            # data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}"
             return hashlib.sha256(data_string.encode()).hexdigest()
         
 class Blockchain:
@@ -87,6 +88,9 @@ class Blockchain:
         self.name: str = name
         self.file_path = f"{self.name}.json"
         # gives the merkel root to each block
+        
+
+    def update_merkel_root(self):
         m_root = ""
         for block in self.chain:
             m_root += block.hash
@@ -173,8 +177,8 @@ class Blockchain:
         return False
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
-        hash = block.hash_block()
-        guess = f"{hash}{block.prev_hash}{block.nonce}".encode()
+        # hash = block.hash_block()
+        guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest() 
 
@@ -187,10 +191,11 @@ class Blockchain:
         i = 0
         print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
         m = True
-        for block in range(1, len(self.chain)):
+        i = 1
+        for block in range(i, len(self.chain)):
             if not self.verify_PoW_singlePass(self.chain[block]):
                 m = False
-                raise InvalidBlockchainException("Hash does not match!")
+                raise InvalidBlockchainException(f"Hash of block {[i]} does not match!")
             else:
                 print(f"BLOCK [{i}] VERIFIED!")
                 i += 1

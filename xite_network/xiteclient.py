@@ -14,6 +14,16 @@ client.connect(("localhost", 12345))
 
 nicknames = []
 TRANSACTION_BUFFER = []
+MINE = False
+
+def set_mine(mine: str):
+    global MINE
+    if mine.lower() == 'true':
+        MINE = True
+    elif mine.lower() == 'false':
+        MINE = False
+    else:
+        raise ValueError("Invalid value for MINE. Expected 'True' or 'False'.")
 
 def recieve_dbug():
     while True:
@@ -77,28 +87,33 @@ def cl_handle_json(client, data: dict):
                 print("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
             # print("In BC_TRANSACTION_DATA action")
-            
-            block = make_node_block(data, client_user, data["prev_hash"])
-            if not block.is_mined(): # block isnt mined yet
-                print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
-                add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-                print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
-                i = 0
-                for transaction in TRANSACTION_BUFFER:
-                    i += 1
-                    print("----Transaction Data----")
-                    print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
-                    # print(json.dumps(transaction, indent=4))
-                    print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
-                    print_transaction_data(transaction)
-                    print("--------------------")
-                print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
-
-                print("NOW MINING BLOCK: ")
-                XiteUser.process_mined_block(data, client_user, use_multithreading=False)
-            # else:
-            #     #checking if block is correct or not:
-            #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
+            block = make_node_block(data, client_user, data["data"]["prev_hash"])
+            client_user.blockchain.update_merkel_root()
+            block.hash = block.hash_block()
+            print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
+            print(colored(f"Block hash: {block.hash}", 'yellow'))
+            if MINE:
+                # if not block.is_mined(): # block isnt mined yet
+                if data["data"]["nonce"] == 0:
+                    print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
+                    add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+                    print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                    i = 0
+                    for transaction in TRANSACTION_BUFFER:
+                        i += 1
+                        print("----Transaction Data----")
+                        print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
+                        # print(json.dumps(transaction, indent=4))
+                        print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
+                        print_transaction_data(transaction)
+                        print("--------------------")
+                    print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+                    
+                    print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
+                    XiteUser.process_mined_block(data, client_user, use_multithreading=False)
+                # else:
+                #     #checking if block is correct or not:
+                #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
@@ -112,11 +127,9 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     if isinstance(data, set):
         data = list(data)
     json_data = {"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name}
-    json_data.update(kwargs)
+    json_data["data"].update(kwargs)
     return json.dumps(json_data)
         
-#TODO: get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
-
 def send_whole_blockchain(client):
     with open(client_user.blockchain.file_path, 'r') as f:
         blockchain = json.load(f)
@@ -159,12 +172,13 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
 def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
     blockchain.load_blockchain()
     chain_length = len(blockchain.chain)
-    prev_hash = blockchain.chain[-1].hash
-    send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
-    send_data = json.loads(send_data)  # Convert send_data to a dictionary
-    send_data["data"]["data"]["chain_length"] = chain_length
-    print(colored(send_data, "yellow"))
-    client.send(json.dumps(send_data).encode())
+    if chain_length > 0:
+        prev_hash = blockchain.chain[-1].hash
+        send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+        send_data = json.loads(send_data)  # Convert send_data to a dictionary
+        send_data["data"]["data"]["chain_length"] = chain_length
+        print(colored(send_data, "yellow"))
+        client.send(json.dumps(send_data).encode())
     print(colored("Sent transaction data", 'green'))
 
 def write():
@@ -174,6 +188,7 @@ def write():
         payment: str = input("\nEnter payment: ")
         recipient = payment.split(' ')[0]
         amount = int(payment.split(' ')[1])
+        # for i in range(1,5):
         make_transaction(recipient, amount, client_user.blockchain)
 
 
@@ -225,54 +240,67 @@ def recv_msg():
                 print("No data received")
         except Exception as e:
             print(colored(f"Error occurred while recieving message: {e}", 'red'))
-            # print(colored(data, 'red'))
+            traceback.print_exc()
             break
         # finally:
         #     print("actual data recieved:")
         #     print(data)
         
 
+# def mining_thread():
+#     while True:
+#         if TRANSACTION_BUFFER:
+#             print("NOW MINING BLOCK: ")
+#             XiteUser.process_mined_block(TRANSACTION_BUFFER, client_user, use_multithreading=False)
+        
 
-def print_transaction_data(transaction_data):
+
+def print_transaction_data(transaction_data, repeat=False):
     try:
         # print(f"CHAIN LENGTH = {transaction_data['data']['chain_length']}")
         # if 'chain_length' in transaction_data:
         #     print(colored(f"RECIEVING CHAIN LENGTH: {transaction_data['data']['chain_length']}", 'light_cyan'))
         # else:
         #     print(colored("Chain length not found in transaction data", 'red'))
-        print(colored("\nBlock Data:", 'yellow'))
-        print(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'))
-        print(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'))
-        print(colored(f"Timestamp: {transaction_data['timestamp']}", 'light_cyan'))
-        print(colored(f"Nonce: {transaction_data['nonce']}", 'light_cyan'))
-        print(colored("\nTransaction Details:", 'yellow'))
-        print(colored(f"Sender Name: {transaction_data['data']['sender_name']}", 'light_cyan'))
-        print(colored(f"Recipient Name: {transaction_data['data']['recipient_name']}", 'light_cyan'))
-        print(colored(f"Amount: {transaction_data['data']['amount']}", 'light_cyan'))
-        print(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'))
+        print(colored("\nBlock Data:", 'yellow'), end="\r" if repeat else "\n")
+        print(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Timestamp: {transaction_data['timestamp']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Nonce: {transaction_data['nonce']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored("\nTransaction Details:", 'yellow'), end="\r" if repeat else "\n")
+        print(colored(f"Sender Name: {transaction_data['data']['sender_name']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Recipient Name: {transaction_data['data']['recipient_name']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Amount: {transaction_data['data']['amount']}", 'light_cyan'), end="\r" if repeat else "\n")
+        print(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'), end="\r" if repeat else "\n")
     except:
         print(colored("Error occurred while printing transaction data", 'red'))
         traceback.print_exc()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Usage: python3 xiteclient.py <username> <password>")
+    if len(sys.argv) != 4:
+        print("Usage: python3 xiteclient.py <username> <password> [MINE]")
         sys.exit(1)
     username = sys.argv[1]
     password = sys.argv[2]
+    set_mine(sys.argv[3])
 
     tb = Blockchain("tb")
-    # tb.load_blockchain()
+    # tb.save_blockchain()
+    tb.load_blockchain()
+    if len(tb.chain) == 0:
+        tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
 
-    write_thread = threading.Thread(target = write)
+    write_thread = threading.Thread(target=write)
     write_thread.start()
-    recieve_thread = threading.Thread(target = recv_msg)
-    recieve_thread.start()
-    
+    receive_thread = threading.Thread(target=recv_msg)
+    receive_thread.start()
+    # mining_thread_func = threading.Thread(target=mining_thread)
+    # mining_thread_func.start()
+
     # async def main():
     #     # Create tasks for the coroutine functions
     #     write_task = asyncio.create_task(write())

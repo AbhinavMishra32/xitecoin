@@ -120,12 +120,15 @@ class XiteUser(User):
     @staticmethod
     def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False):
         """Process a mined block."""
+        # for un_mined_block in un_mined_block_list:
         def mine_and_process_block(json_data: dict):
             print("Mining block...")
             block = make_node_block(json_data, user)
             try:
+                print("--------------------")
                 mined_block = XiteUser.mine_block(un_mined_block, user)
-                print(colored("Block mined successfully", 'light_green'))
+                print(colored(f"Block {mined_block} mined successfully", 'light_green'))
+                print("--------------------")
                 XiteUser.verify_blockchain(user)
                 XiteUser.save_block(user, mined_block)
             except BlockMiningFailedException:
