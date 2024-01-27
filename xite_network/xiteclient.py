@@ -1,7 +1,7 @@
 from multiprocessing import process
-from re import T
 import socket
 import threading
+import traceback
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
@@ -92,6 +92,7 @@ def cl_handle_json(client, data: dict):
             else:
                 print("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
+            # print("In BC_TRANSACTION_DATA action")
             block = make_node_block(data, client_user)
             if not block.is_mined(): # block isnt mined yet
                 print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
@@ -107,15 +108,17 @@ def cl_handle_json(client, data: dict):
                 print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
 
                 print("NOW MINING BLOCK: ")
-                await XiteUser.process_mined_block(block, client_user)
-            else:
-                #checking if block is correct or not:
-                XiteUser.process_mined_block(block, client_user)
+                XiteUser.process_mined_block(data, client_user, use_multithreading=False)
+            # else:
+            #     #checking if block is correct or not:
+            #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
     except Exception as e:
         print(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
+        print(colored("TRACEBACK OF CL_HANDLE_JSON:", attrs=['bold'], color='red'))
+        traceback.print_exc()
         print(colored(data, 'red'))
 
 def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
@@ -154,7 +157,7 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             sender = User(block['data']['sender_name'], blockchain)
             recipient = User(block['data']['recipient_name'], blockchain)
             data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-            new_block = Block(data, block['nonce'])
+            new_block = Block(data, int(block['data']['data']['nonce']))
             new_block.hash = new_block.hash_block()
             if len(blockchain.chain) > 0:
                 new_block.prev_hash = blockchain.chain[-1].hash
@@ -175,7 +178,7 @@ def write():
         send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username)
         print(colored(send_data, "yellow"))
         client.send(send_data.encode())
-        print("Sent transaction data")
+        print(colored("Sent transaction data", 'green'))
         # if client_user.user_exists(recipient):
         #     print("User exists")
         #     recp_user = User(recipient,client_user.blockchain)
@@ -252,15 +255,11 @@ if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python3 xiteclient.py <username> <password>")
         sys.exit(1)
-    
     username = sys.argv[1]
     password = sys.argv[2]
 
     tb = Blockchain("tb")
-    # tb.load_blockchain()
-    # tb.verify_blockchain()
-
-    # tb.create_genesis_block()
+    
     client_user = XiteUser(username, password, tb)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
@@ -269,23 +268,14 @@ if __name__ == "__main__":
     write_thread.start()
     recieve_thread = threading.Thread(target = recv_msg)
     recieve_thread.start()
+    
+    # async def main():
+    #     # Create tasks for the coroutine functions
+    #     write_task = asyncio.create_task(write())
+    #     recv_msg_task = asyncio.create_task(recv_msg())
 
+    #     # Run the tasks concurrently
+    #     await asyncio.gather(write_task, recv_msg_task)
 
-    # if client_user.username == "Abhinav1":
-    #     # send_message("my action",json.dumps({"testing":"tested"}))
-    #     # sdata = make_json(data = client_user.nwtransaction(client_user, 0, save = False), action = "BC_TRANSACTION_DATA", sender = client_user.username)
-    #     # print(sdata)
-    #     # client.send(sdata.encode())
-    #     # print("Sent transaction data")
-    #     write_thread = threading.Thread(target = write)
-    #     write_thread.start()
-    # else:
-    #     print("Not Abhinav1 so not sending transaction data, only recieving")
-    #     client.send(make_json(json.dumps({"testing":"tested"})).encode())
-    # # tb.save_blockchain()
-
-    # write_thread = threading.Thread(target = write)
-    # write_thread.start()
-
-
+    # asyncio.run(main())
     

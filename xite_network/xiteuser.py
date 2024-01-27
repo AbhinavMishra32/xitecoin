@@ -3,9 +3,7 @@ from settings.settings import Settings
 import sqlite3
 import json
 from termcolor import colored
-from xiteclient import synchronize_blockchain
 import threading
-import asyncio
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
 class BlockMiningFailedException(Exception):
@@ -152,7 +150,7 @@ class XiteUser(User):
         
 
     @staticmethod
-    async def mine_block(json_data, user: 'XiteUser') -> Block:
+    def mine_block(json_data: dict, user: 'XiteUser') -> Block:
         """Create a new block and add it to the blockchain."""
         block = make_node_block(json_data, user)
         if not user.blockchain.add_block(block):
@@ -178,6 +176,7 @@ class XiteUser(User):
 
     @staticmethod
     def verify_blockchain(user: 'XiteUser'):
+        from xite_network.xiteclient import synchronize_blockchain #circular import
         """Verify the blockchain."""
         print(colored("Verifying blockchain", 'light_green'))
         if not user.blockchain.verify_blockchain():
@@ -188,19 +187,25 @@ class XiteUser(User):
             print(colored("Blockchain verified successfully", 'light_green'))
 
     @staticmethod
-    async def process_mined_block(un_mined_block: Block, user: 'XiteUser'):
+    def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False):
         """Process a mined block."""
-        print("Mining block...")
-        def mine_and_process_block():
+        def mine_and_process_block(json_data: dict):
             print("Mining block...")
+            block = make_node_block(json_data, user)
             try:
-                mined_block = asyncio.run(XiteUser.mine_block(un_mined_block, user))
+                mined_block = XiteUser.mine_block(un_mined_block, user)
                 print(colored("Block mined successfully", 'light_green'))
                 XiteUser.save_block(user, mined_block)
                 XiteUser.verify_blockchain(user)
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
-        threading.Thread(target=mine_and_process_block).start()
+
+        if use_multithreading:
+            # Start a new thread that will mine and process the block
+            threading.Thread(target=mine_and_process_block, args=un_mined_block).start()
+        else:
+            # Mine and process the block in the current thread
+            mine_and_process_block(un_mined_block)
 
 
 
@@ -208,11 +213,22 @@ class XiteUser(User):
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
 
-def make_node_block(json_data, client_user) -> Block:
-    sender_user = User(json_data["sender"], client_user.blockchain)
-    recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
-    node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
-    node_block = Block(node_data, int(json_data["nonce"]))
+def make_node_block(json_data: dict, client_user) -> Block:
+
+    sender = json_data["data"]["data"].get("sender_name")
+    if sender is None:
+        raise ValueError("Missing 'sender_name' in json_data")
+    sender_user = User(sender, client_user.blockchain)
+    recipient_name = json_data["data"]["data"].get("recipient_name")
+    if recipient_name is None:
+        raise ValueError("Missing 'recipient_name' in json_data")
+    recp_user = User(recipient_name, client_user.blockchain)
+    amount = int(json_data["data"]["data"].get("amount"))
+    message = json_data["data"]["data"].get("message")
+    timestamp = json_data["data"].get("timestamp")
+    node_data = Data(sender_user, recp_user, amount, message, timestamp=timestamp)
+    nonce = int(json_data["data"].get("nonce"))
+    node_block = Block(node_data, nonce)
     return node_block
 
 
