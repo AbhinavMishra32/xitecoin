@@ -46,8 +46,12 @@ class Data:
     def __str__(self):
         return self.message
 class Block:
-    def __init__(self, data: Data, nonce: int = 0):
-        self.prev_hash = ""
+    def __init__(self, data: Data, nonce: int = 0, prev_hash = None):
+        self.merkel_root = ""
+        if prev_hash is None:
+            self.prev_hash = ""
+        else:
+            self.prev_hash = prev_hash
         self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         self.data = data
         self.nonce = nonce
@@ -74,7 +78,7 @@ class Block:
             # print("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
-            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}"
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}"
             return hashlib.sha256(data_string.encode()).hexdigest()
         
 class Blockchain:
@@ -82,6 +86,12 @@ class Blockchain:
         self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
+        # gives the merkel root to each block
+        m_root = ""
+        for block in self.chain:
+            m_root += block.hash
+            m_root = hashlib.sha256(m_root.encode()).hexdigest()
+            block.merkel_root = hashlib.sha256(m_root.encode()).hexdigest()
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]
@@ -141,7 +151,8 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        guess = f"{block.hash}{nonce}".encode()
+        guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
+        # guess = f"{nonce}{block.merkel_root}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         
         return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
@@ -161,9 +172,11 @@ class Blockchain:
             return True
         return False
 
-    def verify_PoW_singlePass(self, block) -> bool:
-        guess = f"{block.hash}{block.nonce}".encode()
-        guess_hash = hashlib.sha256(guess).hexdigest()
+    def verify_PoW_singlePass(self, block: Block) -> bool:
+        hash = block.hash_block()
+        guess = f"{hash}{block.prev_hash}{block.nonce}".encode()
+        # guess = f"{block.merkel_root}{block.nonce}".encode()
+        guess_hash = hashlib.sha256(guess).hexdigest() 
 
         if guess_hash[:DIFFICULITY] == DIFFICULITY*"0":
             return True
@@ -177,7 +190,7 @@ class Blockchain:
         for block in range(1, len(self.chain)):
             if not self.verify_PoW_singlePass(self.chain[block]):
                 m = False
-                raise ValueError("Invalid blockchain: hash does not match!")
+                raise InvalidBlockchainException("Hash does not match!")
             else:
                 print(f"BLOCK [{i}] VERIFIED!")
                 i += 1
@@ -190,7 +203,7 @@ class Blockchain:
     @staticmethod
     def verify_single_block(blockchain: 'Blockchain', block: 'Block'):
         if not blockchain.verify_PoW_singlePass(block):
-                raise InvalidTransactionException("Invalid blockchain: hash does not match!")
+                raise InvalidTransactionException("Hash does not match!")
         else:
             print("BLOCK VERIFIED!")
 
@@ -252,6 +265,9 @@ class User:
 
         
 class InvalidTransactionException(Exception):
+    pass
+
+class InvalidBlockchainException(Exception):
     pass
 
 

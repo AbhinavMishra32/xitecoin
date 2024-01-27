@@ -1,1 +1,1 @@
-TODO: if nonce not present then put in buffer and mine and broadcast but if present then add to local blockchain
+TODO: send the prev hash of ur transaction from the prev block in ur local blockchain, then send the transaction having prev hash with working nonce of that prev hash and current hash then on another user's side see if the prev hash matches ur local blockchain's prev hash, if doesnt then sync blockchain

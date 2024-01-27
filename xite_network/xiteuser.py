@@ -78,80 +78,11 @@ class XiteUser(User):
             if data['sender_name'] == username or data['recipient_name'] == username:
                 return True
         return False
-    
-    # @staticmethod
-    # def save_block(XiteUser: 'XiteUser', block: Block) -> bool:
-    #     """saves the block to the blockchain file"""
-    #     try:         
-    #         with open(XiteUser.blockchain.file_path, 'r') as f:
-    #             blockchain_data = json.load(f)
-    #         blockchain_data.append(block.to_dict())
-    #         with open(XiteUser.blockchain.file_path, 'w') as f:
-    #             json.dump(blockchain_data, f, indent=4)
-    #         return True
-    #     except Exception as e:
-    #         print(f"Error occured while saving block: {e}")
-    #         return False
-
-        # print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
-        # XiteUser.blockchain.verify_blockchain()
-        
-    
-    # @staticmethod
-    # def mine_block(json_data, client_user):
-    #     sender_user = User(json_data["sender"], client_user.blockchain)
-    #     recp_user = User(json_data["data"]["data"]["recipient_name"], client_user.blockchain)
-    #     node_data = Data(sender_user, recp_user, int(json_data["data"]["data"]["amount"]), json_data["data"]["data"]["message"], timestamp = json_data["data"]["timestamp"])
-    #     node_block = Block(node_data)
-    #     XiteUser.save_block(client_user, node_block)
-    #     print("Block saved successfully, but not mined yet \n THEREFORE VERIFYING INCORRECTLY:")
-    #     Blockchain.verify_single_block(client_user.blockchain, node_block)
-    
-
-    # @staticmethod
-    # def mine_block(json_data, blockchain: Blockchain, user: 'XiteUser'):
-    #     """makes nonce for a transaction data (mining a block)"""
-    #     block = make_node_block(json_data, user)
-    #     blockchain.load_blockchain()
-    #     print(f"Mining block... [{colored("[mine_block]", 'magenta')}]")
-    #     if blockchain.add_block(block):
-    #         print(colored("Block mined successfully", 'light_green'))
-    #         print(colored("Saving block", 'light_green'))
-    #         XiteUser.save_block(user, block)
-    #         if user.blockchain.verify_blockchain():
-    #             print(colored("Blockchain verified successfully", 'light_green'))
-    #         else:
-    #             print(colored("Blockchain verification failed after [client_user.blockchain.verify_blockchain()]", 'light_red'))
-    #             print("Requesting latest blockchain from other nodes")
-    #             synchronize_blockchain(user, user.blockchain)
-    #     else:
-    #         raise Exception("Block mining failed")
-
-
-    # @staticmethod
-    # def process_mined_block(data: Block, client_user: 'XiteUser'):
-    #     """processes the mined block"""
-    #     print("Checking block validity:")
-    #     block = make_node_block(data, client_user)
-    #     if client_user.blockchain.verify_PoW_singlePass(block):
-    #         print(colored("BLOCK IS ALREADY MINED, SO NOW SAVING THE BLOCK", 'light_green'))
-    #         XiteUser.save_block(client_user, block)
-    #         print(colored("BLOCK SAVED, NOW VERIFYING BLOCKCHAIN", 'light_green'))
-    #         if client_user.blockchain.verify_blockchain():
-    #             print(colored("Blockchain verified successfully", 'light_green'))
-    #         else:
-    #             print(colored("Blockchain verification failed in [client_user.blockchain.verify_blockchain()]", 'light_red'))
-    #             print("Requesting latest blockchain from other nodes")
-    #             synchronize_blockchain(client_user, client_user.blockchain)
-    #     else:
-    #         print(colored("Block is invalid", 'light_red'))
-    #         print("Requesting latest blockchain from other nodes")
-    #         synchronize_blockchain(client_user, client_user.blockchain)
-        
 
     @staticmethod
     def mine_block(json_data: dict, user: 'XiteUser') -> Block:
         """Create a new block and add it to the blockchain."""
+        
         block = make_node_block(json_data, user)
         if not user.blockchain.add_block(block):
             print(colored("Block mined successfully!", 'light_green'))
@@ -178,11 +109,11 @@ class XiteUser(User):
     def verify_blockchain(user: 'XiteUser'):
         from xite_network.xiteclient import synchronize_blockchain #circular import
         """Verify the blockchain."""
-        print(colored("Verifying blockchain", 'light_green'))
+        print(colored("Verifying blockchain", 'yellow'))
         if not user.blockchain.verify_blockchain():
             print(colored("Blockchain verification failed", 'light_red'))
             print("Requesting latest blockchain from other nodes")
-            synchronize_blockchain(user, user.blockchain)
+            synchronize_blockchain(user)
         else:
             print(colored("Blockchain verified successfully", 'light_green'))
 
@@ -195,8 +126,8 @@ class XiteUser(User):
             try:
                 mined_block = XiteUser.mine_block(un_mined_block, user)
                 print(colored("Block mined successfully", 'light_green'))
-                XiteUser.save_block(user, mined_block)
                 XiteUser.verify_blockchain(user)
+                XiteUser.save_block(user, mined_block)
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
 
@@ -209,11 +140,10 @@ class XiteUser(User):
 
 
 
-
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
 
-def make_node_block(json_data: dict, client_user) -> Block:
+def make_node_block(json_data: dict, client_user, prev_hash = None) -> Block:
 
     sender = json_data["data"]["data"].get("sender_name")
     if sender is None:
@@ -228,7 +158,7 @@ def make_node_block(json_data: dict, client_user) -> Block:
     timestamp = json_data["data"].get("timestamp")
     node_data = Data(sender_user, recp_user, amount, message, timestamp=timestamp)
     nonce = int(json_data["data"].get("nonce"))
-    node_block = Block(node_data, nonce)
+    node_block = Block(node_data, nonce, prev_hash)
     return node_block
 
 

@@ -1,6 +1,7 @@
 from multiprocessing import process
 import socket
 import threading
+import trace
 import traceback
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
@@ -41,23 +42,6 @@ def recieve_dbug():
         #     print(f"Error handling action: {e}")
         #     break
 
-def recieve():
-    while True:
-        try:
-            data = client.recv(2024).decode()
-            if data:  # Check if data is not empty
-                cl_data_recvd = json.loads(data)
-                print(cl_data_recvd)
-                cl_handle_json(client, cl_data_recvd["action"])
-            else:
-                print("No data received")
-        except Exception as e:
-            print(f"Error occurred: {e}")
-            break
-
-def compare_length():
-    pass
-
 def cl_handle_json(client, data: dict):
     # print("in cl_handle_json: ")
     try:
@@ -93,7 +77,8 @@ def cl_handle_json(client, data: dict):
                 print("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
             # print("In BC_TRANSACTION_DATA action")
-            block = make_node_block(data, client_user)
+            
+            block = make_node_block(data, client_user, data["prev_hash"])
             if not block.is_mined(): # block isnt mined yet
                 print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
                 add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
@@ -103,6 +88,8 @@ def cl_handle_json(client, data: dict):
                     i += 1
                     print("----Transaction Data----")
                     print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
+                    # print(json.dumps(transaction, indent=4))
+                    print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
                     print_transaction_data(transaction)
                     print("--------------------")
                 print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
@@ -119,12 +106,14 @@ def cl_handle_json(client, data: dict):
         print(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
         print(colored("TRACEBACK OF CL_HANDLE_JSON:", attrs=['bold'], color='red'))
         traceback.print_exc()
-        print(colored(data, 'red'))
+        print(colored(json.dumps(data, indent = 4), 'red'))
 
-def make_json(data, sender: str = "Default sender", action: str = "Default action") -> str:
+def make_json(data, sender: str = "Default sender", action: str = "Default action", **kwargs) -> str:
     if isinstance(data, set):
         data = list(data)
-    return json.dumps({"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name})
+    json_data = {"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name}
+    json_data.update(kwargs)
+    return json.dumps(json_data)
         
 #TODO: get a hashed block (meaning it is already mined) in one thread, and hash incoming non-hashed blocks and broadcast them in another thread
 
@@ -145,7 +134,7 @@ def make_block(recipient: str, amount: int):
 def mine_block():
     pass
 
-def synchronize_blockchain(user: XiteUser, blockchain: Blockchain):
+def synchronize_blockchain(user: XiteUser):
     d = make_json({"Sync Blockchain": "Sync Blockchain"}, user.username, "SYNC_BC")
     client.send(d.encode())
     pass
@@ -167,6 +156,17 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
         print(f"Failed to synchronize blockchain [{colored("load_blockchain_from_data", 'light_magenta')}]: {e}")
         return False
 
+def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
+    blockchain.load_blockchain()
+    chain_length = len(blockchain.chain)
+    prev_hash = blockchain.chain[-1].hash
+    send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+    send_data = json.loads(send_data)  # Convert send_data to a dictionary
+    send_data["data"]["data"]["chain_length"] = chain_length
+    print(colored(send_data, "yellow"))
+    client.send(json.dumps(send_data).encode())
+    print(colored("Sent transaction data", 'green'))
+
 def write():
     # print("write thread started")
     while True:
@@ -174,11 +174,9 @@ def write():
         payment: str = input("\nEnter payment: ")
         recipient = payment.split(' ')[0]
         amount = int(payment.split(' ')[1])
+        make_transaction(recipient, amount, client_user.blockchain)
 
-        send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username)
-        print(colored(send_data, "yellow"))
-        client.send(send_data.encode())
-        print(colored("Sent transaction data", 'green'))
+
         # if client_user.user_exists(recipient):
         #     print("User exists")
         #     recp_user = User(recipient,client_user.blockchain)
@@ -237,6 +235,11 @@ def recv_msg():
 
 def print_transaction_data(transaction_data):
     try:
+        # print(f"CHAIN LENGTH = {transaction_data['data']['chain_length']}")
+        # if 'chain_length' in transaction_data:
+        #     print(colored(f"RECIEVING CHAIN LENGTH: {transaction_data['data']['chain_length']}", 'light_cyan'))
+        # else:
+        #     print(colored("Chain length not found in transaction data", 'red'))
         print(colored("\nBlock Data:", 'yellow'))
         print(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'))
         print(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'))
@@ -249,6 +252,7 @@ def print_transaction_data(transaction_data):
         print(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'))
     except:
         print(colored("Error occurred while printing transaction data", 'red'))
+        traceback.print_exc()
 
 
 if __name__ == "__main__":
@@ -259,7 +263,7 @@ if __name__ == "__main__":
     password = sys.argv[2]
 
     tb = Blockchain("tb")
-    
+    # tb.load_blockchain()
     client_user = XiteUser(username, password, tb)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())

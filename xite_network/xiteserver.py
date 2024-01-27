@@ -1,6 +1,7 @@
 import socket
 import threading
 import json
+import traceback
 from termcolor import colored
 
 HOST = "localhost"
@@ -65,7 +66,10 @@ def handle_choice(client: socket.socket, data):
                 nicknames[client] = nickname
                 print(f"{nickname} added to clients list")
                 clients.append(client)
-                print(colored(f"NICKNAMES: {nicknames[client]}", 'yellow'))  # Moved inside the else block
+                nickname_list= []
+                for _ in nicknames:
+                    nickname_list.append(nicknames[_])
+                print(colored(f"NICKNAMES: {nickname_list}", 'yellow'))  # Moved inside the else block
                 print(colored(f"NO. OF CLIENTS: {len(clients)}", 'yellow'))
         except Exception as e:
             print(f"Error occured while appending client to clients list: {type(e).__name__}, {e.args}")
@@ -90,6 +94,7 @@ def handle_choice(client: socket.socket, data):
     except Exception as e:
         print(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
         print(colored(data, 'red'))
+        traceback.print_exc()
         # index = clients.index(client)
         # clients.remove(client)
         # client.close()
