@@ -140,6 +140,12 @@ class Blockchain:
             chain_data += "\n"
         return chain_data
     
+    def verify_prev_hash(self) -> bool:
+        for block in self.chain:
+            if block.prev_hash != self.chain[self.chain.index(block)-1].hash:
+                return False
+        return True
+    
     def clear(self, save_to_file=False, delete_file=False):
             """
             Clears the chain and optionally saves the blockchain to a file and/or deletes the file.
@@ -187,10 +193,10 @@ class Blockchain:
             print(f"Blockchain is either empty or failed to load from {self.file_path}")
             for i in range(3):
                 for j in range(0, 4):
-                    print(f"Creating genesis block"+j*".", end="\r")
+                    print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
                     time.sleep(0.14)
-                print(" "*30, end="\r")
-            print("Creating genesis block...")
+                print(" "*60, end="\r")
+            print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
             print("Genesis block created!")
             self.save_blockchain()
@@ -243,9 +249,9 @@ class Blockchain:
         return False
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
-        # hash = block.hash_block()
+        hash = block.hash_block()
         # guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
-        guess = f"{block.hash}{block.nonce}".encode()
+        guess = f"{hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
@@ -255,25 +261,24 @@ class Blockchain:
             return False
 
     def verify_blockchain(self) -> bool:
+        """
+        Verifies the integrity of the blockchain by checking the hashes and the proof of work.
+        """
         print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
-        m = True
-        i = 1
-        for block in range(i, len(self.chain)):
-            # block = self.chain[i]
-            # if not self.verify_PoW_singlePass(block):
-            if not self.verify_PoW_singlePass(self.chain[block]):
-                m = False
-                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
+
+        for i, block in enumerate(self.chain):
+            # Check that the previous hash matches the hash of the previous block
+            # if i > 0 and block.prev_hash != self.chain[i-1].hash:
+            #     return False
+
+            # Verify the proof of work
+            if not self.verify_PoW_singlePass(block):
+                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {block.hash}] does not match!")
             else:
-                # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
-                # print(f"BLOCK [{i} ; HASH : {self.chain[block].hash}] VERIFIED!")
                 print(f"BLOCK [{i}] VERIFIED!")
-                i += 1
-        if m:
-            print("BLOCKCHAIN VERIFIED!")
-        else:
-            print("BLOCKCHAIN NOT VERIFIED!")
-        return m
+
+        print("BLOCKCHAIN VERIFIED!")
+        return True
 
     @staticmethod
     def verify_single_block(blockchain: 'Blockchain', block: 'Block'):
