@@ -24,11 +24,12 @@ import hashlib
 import json
 import rsa
 from settings.settings import Settings
+import time
 
 
 DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
 # DIFFICULITY = 4
-HASH_WITHOUT_TIMESTAMP = True #for static hashing, wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
+HASH_WITHOUT_TIMESTAMP = True #for static hashing [same hash of a block everytime with the same variables, but time isnt a variable when this is enabled], wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
 BLOCK_REWARD = 2.5
 
 class Data:
@@ -114,24 +115,41 @@ class Blockchain:
         return chain_data
     
     def load_blockchain(self) -> bool:
-        try:
-            self.chain = []
-            with open(self.file_path, 'r') as f:
-                    blockchain_data = json.load(f)
-            for block in blockchain_data:
-                sender = User(block['data']['sender_name'], self)
-                recipient = User(block['data']['recipient_name'], self)
-                data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-                # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
-                new_block = Block(data, block['nonce'])
-                new_block.hash = new_block.hash_block()
-                if len(self.chain) > 0:
-                    new_block.prev_hash = self.chain[-1].hash
-                self.chain.append(new_block)
-                # print(f"LOADED BLOCK: {block}")
+        def initialize_blockchain():
+            try:
+                self.chain = []
+                with open(self.file_path, 'r') as f:
+                        blockchain_data = json.load(f)
+                for block in blockchain_data:
+                    sender = User(block['data']['sender_name'], self)
+                    recipient = User(block['data']['recipient_name'], self)
+                    data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
+                    # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
+                    new_block = Block(data, block['nonce'])
+                    new_block.hash = new_block.hash_block()
+                    if len(self.chain) > 0:
+                        new_block.prev_hash = self.chain[-1].hash
+                    self.chain.append(new_block)
+                    # print(f"LOADED BLOCK: {block}")
+                    
+                return True
+            except Exception as e:
+                print(f"Failed to load blockchain: {e}")
+                return False
+        if initialize_blockchain():
+            print(f"Blockchain loaded from {self.file_path}")
             return True
-        except Exception as e:
-            print(f"Failed to load blockchain: {e}")
+        else:
+            print(f"Blockchain is either empty or failed to load from {self.file_path}")
+            for i in range(3):
+                for j in range(0, 4):
+                    print(f"Creating genesis block"+j*".", end="\r")
+                    time.sleep(0.26)
+                print(" "*30, end="\r")
+            print("Creating genesis block...")
+            self.create_genesis_block()
+            print("Genesis block created!")
+            self.save_blockchain()
             return False
         
 
@@ -172,7 +190,7 @@ class Blockchain:
         self.chain.append(block)
         return block.is_mined()
 
-    def verify_block(self, block: "Block") -> bool:
+    def verify_block_signature(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
         signature = block.data.sender.sign(block.data.message)
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
@@ -180,10 +198,10 @@ class Blockchain:
         return False
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
-        # hash = block.hash_block()
-        guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
+        hash = block.hash_block()
+        guess = f"{hash}{block.prev_hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
-        guess_hash = hashlib.sha256(guess).hexdigest() 
+        guess_hash = hashlib.sha256(guess).hexdigest()
 
         if guess_hash[:DIFFICULITY] == DIFFICULITY*"0":
             return True
@@ -196,11 +214,14 @@ class Blockchain:
         m = True
         i = 1
         for block in range(i, len(self.chain)):
-            if not self.verify_PoW_singlePass(self.chain[block]):
+            # block = self.chain[i]
+            # if not self.verify_PoW_singlePass(block):
+            if not self.verify_PoW_singlePass(self.chain[i]):
                 m = False
-                raise InvalidBlockchainException(f"Hash of block [{i}] does not match!")
+                raise InvalidBlockchainException(f"Hash of block [{i} ; HASH : {self.chain[i].hash}] does not match!")
             else:
-                print(f"BLOCK [{i}] VERIFIED!")
+                # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
+                print(f"BLOCK [{i} ; HASH : {self.chain[i].hash}] VERIFIED!")
                 i += 1
         if m:
             print("BLOCKCHAIN VERIFIED!")
@@ -260,7 +281,7 @@ class User:
         # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
         new_block = Block(transaction_data) #* gives current transaction data's hash to the current block but add_block() method automatically gives the hash of the current block to the next block. (or current block has previous block's hash)
         if save:
-            if self.blockchain.verify_block(new_block):
+            if self.blockchain.verify_block_signature(new_block):
                 self.blockchain.add_block(new_block)
                 print("Transaction was verified! ")
             else: 

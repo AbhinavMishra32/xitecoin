@@ -280,11 +280,11 @@ if __name__ == "__main__":
     set_mine(sys.argv[3])
 
     tb = Blockchain(f"tb_{username}")
-    if not tb.load_blockchain():
-        tb.create_genesis_block()
-        tb.save_blockchain()
-    if len(tb.chain) == 0:
-        tb.create_genesis_block()
+    # if not tb.load_blockchain():
+    #     tb.create_genesis_block()
+    #     tb.save_blockchain()
+    # if len(tb.chain) == 0:
+    #     tb.create_genesis_block()
     client_user = XiteUser(username, password, tb)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())

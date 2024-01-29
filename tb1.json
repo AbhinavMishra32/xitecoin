@@ -8,7 +8,7 @@
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "27/01/2024 23:20:41",
+        "timestamp": "29/01/2024 22:12:29",
         "nonce": 32
     },
     {
@@ -20,7 +20,19 @@
             "amount": 0,
             "message": "user gave user 0 $XITE"
         },
-        "timestamp": "27/01/2024 23:20:41",
+        "timestamp": "29/01/2024 22:12:29",
         "nonce": 46004
+    },
+    {
+        "prev_hash": "1169c743e3b27b517607312e14162511e7eb8e33d47eabc7b4a1e6f6fc69415f",
+        "hash": "1169c743e3b27b517607312e14162511e7eb8e33d47eabc7b4a1e6f6fc69415f",
+        "data": {
+            "sender_name": "user",
+            "recipient_name": "user",
+            "amount": 0,
+            "message": "user gave user 0 $XITE"
+        },
+        "timestamp": "29/01/2024 22:12:30",
+        "nonce": 10752
     }
 ]
