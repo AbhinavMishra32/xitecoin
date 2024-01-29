@@ -2,10 +2,11 @@ import xitelib.node as node
 from termcolor import colored
 
 tb = node.Blockchain("tb1")
+tb.clear()
 # tb.create_genesis_block()
 
 tb.load_blockchain()
-tb.verify_blockchain()
+# tb.verify_blockchain()
 
 user = node.User("user", tb)
 
@@ -15,10 +16,16 @@ block = node.Block(data)
 user.transaction(user, 0)
 user.transaction(user, 0)
 
-tb.save_blockchain()
 
+# tb.save_blockchain()
 
 print(tb)
+
+hash1 = tb.chain[1].hash_block()
+hash2 = tb.chain[2].hash_block()
+print("--------------------")
+print("hash 1" + hash1)
+print("hash 2" + hash2)
 # print(block.hash)
 # print(block.hash)
 # tb.create_genesis_block()

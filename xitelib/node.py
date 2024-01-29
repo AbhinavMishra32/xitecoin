@@ -25,6 +25,7 @@ import json
 import rsa
 from settings.settings import Settings
 import time
+import os
 
 
 DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
@@ -87,13 +88,38 @@ class Block:
             return hashlib.sha256(data_string.encode()).hexdigest()
         
 class Blockchain:
+    """
+    Represents a blockchain.
+
+    Attributes:
+    - chain (list[Block]): The list of blocks in the blockchain.
+    - name (str): The name of the blockchain.
+    - file_path (str): The file path to save the blockchain.
+
+    Methods:
+    - update_merkel_root(): Updates the merkel root for each block in the blockchain.
+    - __getitem__(index) -> Block: Returns the block at the specified index.
+    - __str__() -> str: Returns a string representation of the blockchain.
+    - clear(save_to_file=False, delete_file=False): Clears the chain and optionally saves the blockchain to a file and/or deletes the file.
+    - load_blockchain() -> bool: Loads the blockchain from a file or creates a new one if it doesn't exist.
+    - to_dict() -> list: Converts the blockchain to a list of dictionaries.
+    - create_genesis_block(): Creates the genesis block of the blockchain.
+    - proof_of_work(block) -> int: Performs the proof of work algorithm to find the nonce for the given block.
+    - valid_proof(block: Block, nonce: int) -> list: Checks if the given nonce is a valid proof of work for the block.
+    - add_block(block: Block) -> bool: Adds a new block to the blockchain.
+    - verify_block_signature(block: Block) -> bool: Verifies the signature of a block.
+    - verify_PoW_singlePass(block: Block) -> bool: Verifies the proof of work of a block in a single pass.
+    - verify_blockchain() -> bool: Verifies the entire blockchain for valid proof of work.
+    - verify_single_block(blockchain: Blockchain, block: Block): Verifies the proof of work of a single block.
+    - save_blockchain(): Saves the blockchain to a file.
+    """
     def __init__(self, name: str):
         self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
-        # gives the merkel root to each block
-        
 
+
+    # gives the merkel root to each block
     def update_merkel_root(self):
         m_root = ""
         for block in self.chain:
@@ -113,6 +139,23 @@ class Blockchain:
             chain_data += str(block)
             chain_data += "\n"
         return chain_data
+    
+    def clear(self, save_to_file=False, delete_file=False):
+            """
+            Clears the chain and optionally saves the blockchain to a file and/or deletes the file.
+
+            Parameters:
+            - save_to_file (bool): If True, saves the blockchain to a file. Default is False.
+            - delete_file (bool): If True, deletes the file containing the blockchain. Default is False.
+            """
+            self.chain.clear()
+            if save_to_file:
+                self.save_blockchain()
+            if delete_file:
+                if os.path.exists(self.file_path):
+                    os.remove(self.file_path)
+            else:
+                print(f"The file {self.file_path} does not exist.")
     
     def load_blockchain(self) -> bool:
         def initialize_blockchain():
@@ -144,7 +187,7 @@ class Blockchain:
             for i in range(3):
                 for j in range(0, 4):
                     print(f"Creating genesis block"+j*".", end="\r")
-                    time.sleep(0.26)
+                    time.sleep(0.14)
                 print(" "*30, end="\r")
             print("Creating genesis block...")
             self.create_genesis_block()
