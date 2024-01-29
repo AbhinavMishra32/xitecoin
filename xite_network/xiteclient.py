@@ -116,6 +116,7 @@ def cl_handle_json(client, data: dict):
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
+
     except Exception as e:
         print(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
         print(colored("TRACEBACK OF CL_HANDLE_JSON:", attrs=['bold'], color='red'))
@@ -185,10 +186,14 @@ def write():
     while True:
         print("---------XITECOIN---------")
         payment: str = input("\nEnter payment: ")
-        recipient = payment.split(' ')[0]
-        amount = int(payment.split(' ')[1])
+        try:
+            recipient = payment.split(' ')[0]
+            amount = int(payment.split(' ')[1])
+            make_transaction(recipient, amount, client_user.blockchain)
+        except Exception:
+            # print("IndexError occurred while handling json")
+            print(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']))
         # for i in range(1,5):
-        make_transaction(recipient, amount, client_user.blockchain)
 
 
         # if client_user.user_exists(recipient):

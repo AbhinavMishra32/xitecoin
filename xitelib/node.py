@@ -154,8 +154,8 @@ class Blockchain:
             if delete_file:
                 if os.path.exists(self.file_path):
                     os.remove(self.file_path)
-            else:
-                print(f"The file {self.file_path} does not exist.")
+                else:
+                    raise FileNotFoundError(f"File {self.file_path} does not exist!")
     
     def load_blockchain(self) -> bool:
         def initialize_blockchain():
@@ -174,7 +174,8 @@ class Blockchain:
                         new_block.prev_hash = self.chain[-1].hash
                     self.chain.append(new_block)
                     # print(f"LOADED BLOCK: {block}")
-                    
+                if len(self.chain) == 0:
+                    return False
                 return True
             except Exception as e:
                 print(f"Failed to load blockchain: {e}")
@@ -219,7 +220,8 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
+        # guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
+        guess = f"{block.hash}{nonce}".encode()
         # guess = f"{nonce}{block.merkel_root}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         
@@ -241,8 +243,9 @@ class Blockchain:
         return False
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
-        hash = block.hash_block()
-        guess = f"{hash}{block.prev_hash}{block.nonce}".encode()
+        # hash = block.hash_block()
+        # guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
+        guess = f"{block.hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
@@ -252,19 +255,18 @@ class Blockchain:
             return False
 
     def verify_blockchain(self) -> bool:
-        i = 0
         print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
         m = True
         i = 1
         for block in range(i, len(self.chain)):
             # block = self.chain[i]
             # if not self.verify_PoW_singlePass(block):
-            if not self.verify_PoW_singlePass(self.chain[i]):
+            if not self.verify_PoW_singlePass(self.chain[block]):
                 m = False
-                raise InvalidBlockchainException(f"Hash of block [{i} ; HASH : {self.chain[i].hash}] does not match!")
+                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
             else:
                 # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
-                print(f"BLOCK [{i} ; HASH : {self.chain[i].hash}] VERIFIED!")
+                print(f"BLOCK [{i} ; HASH : {self.chain[block].hash}] VERIFIED!")
                 i += 1
         if m:
             print("BLOCKCHAIN VERIFIED!")

@@ -2,19 +2,19 @@ import xitelib.node as node
 from termcolor import colored
 
 tb = node.Blockchain("tb1")
-tb.clear()
+tb.load_blockchain()
+tb.verify_blockchain()
+# tb.clear(delete_file=True)
 # tb.create_genesis_block()
 
-tb.load_blockchain()
-# tb.verify_blockchain()
 
 user = node.User("user", tb)
 
 data = node.Data(user, user, 0, "message message 123")
 block = node.Block(data)
 
-user.transaction(user, 0)
-user.transaction(user, 0)
+# user.transaction(user, 0)
+# user.transaction(user, 0)
 
 
 # tb.save_blockchain()
