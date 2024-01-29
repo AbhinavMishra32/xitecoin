@@ -98,6 +98,7 @@ class XiteUser(User):
             with open(user.blockchain.file_path, 'r') as f:
                 blockchain_data = json.load(f)
             blockchain_data.append(block.to_dict())
+            user.blockchain.save_blockchain() 
             with open(user.blockchain.file_path, 'w') as f:
                 json.dump(blockchain_data, f, indent=4)
             return True
@@ -109,6 +110,7 @@ class XiteUser(User):
     def verify_blockchain(user: 'XiteUser'):
         from xite_network.xiteclient import synchronize_blockchain #circular import
         """Verify the blockchain."""
+        user.blockchain.load_blockchain()
         print(colored("Verifying blockchain", 'yellow'))
         if not user.blockchain.verify_blockchain():
             print(colored("Blockchain verification failed", 'light_red'))

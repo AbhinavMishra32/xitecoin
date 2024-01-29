@@ -266,7 +266,8 @@ class Blockchain:
                 raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
             else:
                 # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
-                print(f"BLOCK [{i} ; HASH : {self.chain[block].hash}] VERIFIED!")
+                # print(f"BLOCK [{i} ; HASH : {self.chain[block].hash}] VERIFIED!")
+                print(f"BLOCK [{i}] VERIFIED!")
                 i += 1
         if m:
             print("BLOCKCHAIN VERIFIED!")
