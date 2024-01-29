@@ -79,7 +79,7 @@ class Block:
 
     def hash_block(self) -> str:
         if HASH_WITHOUT_TIMESTAMP:
-            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}"
+            data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.merkel_root})"
             # print("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
@@ -238,6 +238,7 @@ class Blockchain:
             block.prev_hash = self.chain[-1].hash
         nonce = self.proof_of_work(block)
         block.nonce = nonce
+        self.update_merkel_root()
         self.chain.append(block)
         return block.is_mined()
 
@@ -249,9 +250,9 @@ class Blockchain:
         return False
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
-        hash = block.hash_block()
+        # hash = block.hash_block()
         # guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
-        guess = f"{hash}{block.nonce}".encode()
+        guess = f"{block.hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
@@ -261,24 +262,25 @@ class Blockchain:
             return False
 
     def verify_blockchain(self) -> bool:
-        """
-        Verifies the integrity of the blockchain by checking the hashes and the proof of work.
-        """
         print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
-
-        for i, block in enumerate(self.chain):
-            # Check that the previous hash matches the hash of the previous block
-            # if i > 0 and block.prev_hash != self.chain[i-1].hash:
-            #     return False
-
-            # Verify the proof of work
+        m = True
+        i = 1
+        for block in range(i, len(self.chain)):
+            block = self.chain[i]
+            if i > 0 and block.prev_hash != self.chain[i-1].hash:
+                return False
             if not self.verify_PoW_singlePass(block):
-                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {block.hash}] does not match!")
+                m = False
+                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
             else:
-                print(f"BLOCK [{i}] VERIFIED!")
-
-        print("BLOCKCHAIN VERIFIED!")
-        return True
+                # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
+                print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
+                i += 1
+        if m:
+            print("BLOCKCHAIN VERIFIED!")
+        else:
+            print("BLOCKCHAIN NOT VERIFIED!")
+        return m
 
     @staticmethod
     def verify_single_block(blockchain: 'Blockchain', block: 'Block'):
