@@ -233,7 +233,9 @@ class Blockchain:
         
         return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
 
-    def add_block(self, block: 'Block') -> bool:
+    def add_block(self, block: 'Block', auto_load = False) -> bool:
+        if auto_load:
+            self.load_blockchain()
         if len(self.chain) > 0:
             block.prev_hash = self.chain[-1].hash
         nonce = self.proof_of_work(block)
@@ -267,7 +269,7 @@ class Blockchain:
         i = 1
         for block in range(i, len(self.chain)):
             block = self.chain[i]
-            if i > 0 and block.prev_hash != self.chain[i-1].hash:
+            if i > 0 and block.prev_hash != self.chain[i-1].hash: # also verifies the prev_hash of the each block
                 return False
             if not self.verify_PoW_singlePass(block):
                 m = False

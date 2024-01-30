@@ -109,7 +109,8 @@ def cl_handle_json(client, data: dict):
                     print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
 
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
-                    XiteUser.process_mined_block(data, client_user, use_multithreading=False)
+                    if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
+                        TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
                 # else:
                 #     #checking if block is correct or not:
                 #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
@@ -165,7 +166,7 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             blockchain.chain.append(new_block)
         return True
     except Exception as e:
-        print(f"Failed to synchronize blockchain [{colored("load_blockchain_from_data", 'light_magenta')}]: {e}")
+        print(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")
         return False
 
 def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
@@ -233,7 +234,7 @@ def recv_msg():
         try:
             # print("recieving data")
             # data = client.recv(2024).decode().strip().replace('\n', '')
-            data = client.recv(10024).decode()
+            data = client.recv(100024).decode()
             # print(data)
             data_json = json.loads(data)
             print(colored(data_json, 'cyan'))
