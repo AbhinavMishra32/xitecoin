@@ -110,7 +110,9 @@ def cl_handle_json(client, data: dict):
 
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
-                        TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
+                        # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
+                        # client_user.blockchain.save_blockchain()
+                        pass
                 # else:
                 #     #checking if block is correct or not:
                 #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
