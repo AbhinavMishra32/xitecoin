@@ -8,47 +8,11 @@
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "30/01/2024 18:34:44",
+        "timestamp": "30/01/2024 18:41:45",
         "nonce": 32
     },
     {
         "prev_hash": "8514b8ee4e80a5b008348888547fe46584aa8144b8f576d7a518912384ecea67",
-        "hash": "ecc7e0904b7a6a210dbb742fb8c7a1607d20f0e66fd1608dc7fa5517df84bd7e",
-        "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "hk",
-            "amount": 0,
-            "message": "Abhinav1 gave hk 0 $XITE"
-        },
-        "timestamp": "30/01/2024 18:34:45",
-        "nonce": 83320
-    },
-    {
-        "prev_hash": "ecc7e0904b7a6a210dbb742fb8c7a1607d20f0e66fd1608dc7fa5517df84bd7e",
-        "hash": "bc43ca26a54b8e2db619b548292048866768d3a5206f437aabd6f1fbc09a8beb",
-        "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "ihjkjh",
-            "amount": 0,
-            "message": "Abhinav1 gave ihjkjh 0 $XITE"
-        },
-        "timestamp": "30/01/2024 18:34:53",
-        "nonce": 298
-    },
-    {
-        "prev_hash": "bc43ca26a54b8e2db619b548292048866768d3a5206f437aabd6f1fbc09a8beb",
-        "hash": "1f0a5839c0261683b625549eb912ee9b0595950142eb8d10bb7be7b62f2613d3",
-        "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "ghjghjkjgh",
-            "amount": 0,
-            "message": "Abhinav1 gave ghjghjkjgh 0 $XITE"
-        },
-        "timestamp": "30/01/2024 18:34:59",
-        "nonce": 82133
-    },
-    {
-        "prev_hash": "1f0a5839c0261683b625549eb912ee9b0595950142eb8d10bb7be7b62f2613d3",
         "hash": "d8f18fad6aaa91cff221169c99c710928a2206aeaf617524683b7a77fb193bd3",
         "data": {
             "sender_name": "Abhianv2",
@@ -80,7 +44,7 @@
             "amount": 0,
             "message": "Abhianv2 gave asdf 0 $XITE"
         },
-        "timestamp": "30/01/2024 19:06:05",
+        "timestamp": "30/01/2024 19:06:06",
         "nonce": 81559
     },
     {
@@ -92,7 +56,7 @@
             "amount": 0,
             "message": "Abhianv2 gave adsf 0 $XITE"
         },
-        "timestamp": "30/01/2024 19:10:37",
+        "timestamp": "30/01/2024 19:10:36",
         "nonce": 56609
     },
     {

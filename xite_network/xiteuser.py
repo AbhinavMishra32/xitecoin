@@ -81,10 +81,21 @@ class XiteUser(User):
 
     @staticmethod
     def mine_block(json_data: dict, user: 'XiteUser') -> Block:
-        """Create a new block and add it to the blockchain."""
+        """Create a new block and add it to the blockchain.
+
+        Args:
+            json_data (dict): The JSON data to be included in the block.
+            user (XiteUser): The user mining the block.
+
+        Returns:
+            Block: The newly mined block.
+
+        Raises:
+            BlockMiningFailedException: If the block fails to be added to the blockchain.
+        """
         
         block = make_node_block(json_data, user)
-        if not user.blockchain.add_block(block):
+        if not user.blockchain.add_block(block, auto_load=True):
             print(colored("Block mined successfully!", 'light_green'))
             return block
         else:
@@ -92,7 +103,20 @@ class XiteUser(User):
 
     @staticmethod
     def save_block(user: 'XiteUser', block: Block):
-        """Save a block."""
+        """Save a block.
+
+        This method saves a block to the blockchain file associated with the user.
+        It appends the block data to the existing blockchain data, saves the updated
+        blockchain, and returns True if the block is successfully saved. If any error
+        occurs during the process, it prints the error message and returns False.
+
+        Args:
+            user (XiteUser): The user object associated with the blockchain.
+            block (Block): The block to be saved.
+
+        Returns:
+            bool: True if the block is successfully saved, False otherwise.
+        """
         print(colored("Saving block", 'light_green'))
         try:         
             with open(user.blockchain.file_path, 'r') as f:
@@ -103,27 +127,42 @@ class XiteUser(User):
                 json.dump(blockchain_data, f, indent=4)
             return True
         except Exception as e:
-            print(f"Error occured while saving block: {e}")
+            print(f"Error occurred while saving block: {e}")
             return False
 
     @staticmethod
     def verify_blockchain(user: 'XiteUser'):
+        """
+        Verify the blockchain.
+
+        This method is used to verify the integrity of the blockchain associated with the user.
+        It loads the blockchain, verifies its integrity, and if the verification fails, requests the latest blockchain from other nodes.
+
+        Args:
+            user ('XiteUser'): The user object for which the blockchain needs to be verified.
+
+        Returns:
+            bool: True if the blockchain is verified successfully, False otherwise.
+        """
         from xite_network.xiteclient import synchronize_blockchain #circular import
-        """Verify the blockchain."""
         user.blockchain.load_blockchain()
         print(colored("Verifying blockchain", 'yellow'))
         if not user.blockchain.verify_blockchain():
             print(colored("Blockchain verification failed", 'light_red'))
             print("Requesting latest blockchain from other nodes")
             synchronize_blockchain(user)
+            return False
         else:
             print(colored("Blockchain verified successfully", 'light_green'))
+            return True
 
     @staticmethod
-    def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False):
+    def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False) -> bool:
         """Process a mined block."""
-        # for un_mined_block in un_mined_block_list:
+        success = False
+
         def mine_and_process_block(json_data: dict):
+            nonlocal success
             print("Mining block...")
             block = make_node_block(json_data, user)
             try:
@@ -133,6 +172,7 @@ class XiteUser(User):
                 print("--------------------")
                 XiteUser.verify_blockchain(user)
                 XiteUser.save_block(user, mined_block)
+                success = True
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
 
@@ -143,6 +183,7 @@ class XiteUser(User):
             # Mine and process the block in the current thread
             mine_and_process_block(un_mined_block)
 
+        return success
 
 
 def add_block_to_buffer(buffer_list, block: Block):
