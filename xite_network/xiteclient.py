@@ -2,6 +2,8 @@ from multiprocessing import process
 import socket
 import threading
 import traceback
+
+from flask import cli
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
@@ -107,6 +109,22 @@ def cl_handle_json(client, data: dict):
                         print_transaction_data(transaction)
                         print("--------------------")
                     print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+                    #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
+                    # for that 
+                    client_user.blockchain.load_blockchain()
+                    if len(client_user.blockchain.chain) > 0:
+                        # Check if the incoming chain length is greater than the local blockchain's length
+                        if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
+                            # Check if the last block's hash in the local blockchain matches the previous hash in the incoming data
+                            if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
+                                print("Blockchain is outdated or previous hash of incoming block doesn't match local. Synchronizing blockchain.")
+                                synchronize_blockchain(client_user)
+                            else:
+                                print("Last block's hash doesn't match with the previous hash in the incoming data.")
+                        else:
+                            print("Incoming chain length is not greater than the local blockchain's length.")
+                    else:
+                        print("Local blockchain is empty.")
 
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
@@ -161,11 +179,11 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
             new_block = Block(data, int(block['data']['data']['nonce']), hash = block['data']['hash'])
             # new_block.hash = new_block.hash_block()
-            # blockchain.save_blockchain()
-            # blockchain.load_blockchain()
-            if len(blockchain.chain) > 0:
-                new_block.prev_hash = blockchain.chain[-1].hash
             blockchain.chain.append(new_block)
+        blockchain.save_blockchain()
+        blockchain.load_blockchain()
+            # if len(blockchain.chain) > 0:
+            #     new_block.prev_hash = blockchain.chain[-1].hash
         return True
     except Exception as e:
         print(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")
@@ -229,6 +247,16 @@ def send_message(action: str, message):
     }) 
     print(msg_json)
     client.send(msg_json.encode())
+
+def load_multiple_json_objects(data):
+    try:
+        objs = data.split('}{')
+        json_objects = [json.loads(objs[0] + '}')]
+        for obj in objs[1:]:
+            json_objects.append(json.loads('{' + obj))
+        return json_objects
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e}")
 
 def recv_msg():
     while True:

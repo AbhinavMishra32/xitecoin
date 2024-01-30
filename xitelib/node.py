@@ -234,15 +234,25 @@ class Blockchain:
         return [guess_hash[:DIFFICULITY] == DIFFICULITY*"0", guess_hash]
 
     def add_block(self, block: 'Block', auto_load = False) -> bool:
-        if auto_load:
-            self.load_blockchain()
-        if len(self.chain) > 0:
-            block.prev_hash = self.chain[-1].hash
-        nonce = self.proof_of_work(block)
-        block.nonce = nonce
-        self.update_merkel_root()
-        self.chain.append(block)
-        return block.is_mined()
+            """
+            Adds a block to the blockchain.
+
+            Parameters:
+            - block: The block to be added.
+            - auto_load: If True, the blockchain will be loaded before adding the block.
+
+            Returns:
+            - bool: True if the block is successfully added and mined, False otherwise.
+            """
+            if auto_load:
+                self.load_blockchain()
+            if len(self.chain) > 0:
+                block.prev_hash = self.chain[-1].hash
+            nonce = self.proof_of_work(block)
+            block.nonce = nonce
+            self.update_merkel_root()
+            self.chain.append(block)
+            return block.is_mined()
 
     def verify_block_signature(self, block: "Block") -> bool:
         # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
