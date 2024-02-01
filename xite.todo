@@ -14,3 +14,4 @@ Traceback (most recent call last):
     raise JSONDecodeError("Extra data", s, end)
 json.decoder.JSONDecodeError: Extra data: line 1 column 54 (char 53)
 
+TODO: make syncing blockchain when sending a transaction and not mining it, recieve the latest blockchain.
