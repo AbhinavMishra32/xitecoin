@@ -258,23 +258,28 @@ def load_multiple_json_objects(data):
     except json.JSONDecodeError as e:
         print(f"JSONDecodeError: {e}")
 
+import json
+
 def recv_msg():
+    buffer = ""
     while True:
-        data = "DEFAULT DATA"
         try:
-            # print("recieving data")
-            # data = client.recv(2024).decode().strip().replace('\n', '')
             data = client.recv(100024).decode()
-            # print(data)
-            data_json = json.loads(data)
-            print(colored(data_json, 'cyan'))
-            if data:
-                # print(data_json)
-                cl_handle_json(client, data_json)
-            else:
-                print("No data received")
+            buffer += data
+            while buffer:
+                try:
+                    data_json, index = json.JSONDecoder().raw_decode(buffer)
+                    buffer = buffer[index:].lstrip()
+                    print(colored(data_json, 'cyan'))
+                    if data_json:
+                        cl_handle_json(client, data_json)
+                    else:
+                        print("No data received")
+                except ValueError:
+                    # Not enough data to decode, wait for more
+                    break
         except Exception as e:
-            print(colored(f"Error occurred while recieving message: {e}", 'red'))
+            print(colored(f"Error occurred while receiving json [recv_msg]: {e}", 'red'))
             traceback.print_exc()
             break
         # finally:
