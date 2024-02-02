@@ -105,14 +105,20 @@ def recieve():
             if client not in clients:
                 thread = threading.Thread(target = handle, args = (client,))
                 thread.start()
-                print("handle thread started")
+                print(colored(f"Handle thread started", attrs=['bold']))
             # data = client.recv(10024).decode()
-            # if data:  # Add this line 
+            # if data:  # Add this line     
                 # print(f"Connected with {str(address)}")
                 # print("starting handle thread")
     except Exception as e:
         print(f"Error occurred: {e}")
+        traceback.print_exc()
 
 if __name__ == "__main__":
-    print("Server started...")
+    print(colored('''
+                  
+▀▄▀ █ ▀█▀ █▀▀ █▀▀ █▀█ █ █▄░█
+█░█ █ ░█░ ██▄ █▄▄ █▄█ █ █░▀█
+''', 'cyan'))
+    print(colored("Xitecoin server started...", 'green'))
     recieve()

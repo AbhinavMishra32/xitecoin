@@ -72,7 +72,7 @@ def cl_handle_json(client, data: dict):
             send_whole_blockchain(client)
         elif action == "SYNC_BC":
             print("Received latest blockchain from server")
-            received_blockchain = Blockchain(data["data"]["name"])
+            received_blockchain = Blockchain(data["bc_name"])
             if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
                 if received_blockchain.verify_blockchain():
                     print("Blockchain verification successful")
@@ -118,7 +118,7 @@ def cl_handle_json(client, data: dict):
                             # Check if the last block's hash in the local blockchain matches the previous hash in the incoming data
                             if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
                                 print("Blockchain is outdated or previous hash of incoming block doesn't match local. Synchronizing blockchain.")
-                                synchronize_blockchain(client_user)
+                                synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
                             else:
                                 print("Last block's hash doesn't match with the previous hash in the incoming data.")
                         else:
@@ -165,10 +165,9 @@ def make_block(recipient: str, amount: int):
         return None
     # return client_user.blockchain.chain[-1].to_dict()
 
-def synchronize_blockchain(user: XiteUser):
-    d = make_json({"Sync Blockchain": "Sync Blockchain"}, user.username, "SYNC_BC")
+def synchronize_blockchain(user: XiteUser, chain: list):
+    d = make_json({"Sync Blockchain": "Sync Blockchain"}, user.username, "SYNC_BC", chain = chain)
     client.send(d.encode())
-    pass
 
 def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> bool:
     try:

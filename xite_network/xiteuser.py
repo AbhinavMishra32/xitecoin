@@ -150,7 +150,7 @@ class XiteUser(User):
         if not user.blockchain.verify_blockchain():
             print(colored("Blockchain verification failed", 'light_red'))
             print("Requesting latest blockchain from other nodes")
-            synchronize_blockchain(user)
+            synchronize_blockchain(user, user.blockchain.chain)
             return False
         else:
             print(colored("Blockchain verified successfully", 'light_green'))

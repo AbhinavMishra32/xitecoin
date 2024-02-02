@@ -1,17 +1,3 @@
 TODO: in line 112 in xiteclient.py [fix the syncing of blockchain]
-also fix this error:
-Blockchain verified successfully
-Saving block
-Error occurred while recieving message: Extra data: line 1 column 54 (char 53)
-Traceback (most recent call last):
-  File "/Users/abhinavmishra/Coding/xitecoin/xite_network/xiteclient.py", line 269, in recv_msg
-    data_json = json.loads(data)
-                ^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", line 346, in loads
-    return _default_decoder.decode(s)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line 340, in decode
-    raise JSONDecodeError("Extra data", s, end)
-json.decoder.JSONDecodeError: Extra data: line 1 column 54 (char 53)
 
 TODO: make syncing blockchain when sending a transaction and not mining it, recieve the latest blockchain.
