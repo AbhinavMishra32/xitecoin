@@ -84,8 +84,10 @@ def cl_handle_json(client, data: dict):
                     print("Blockchain saved successfully")
                 else:
                     print("Error occurred while verifying blockchain")
+                    raise Exception("Blockchain verification failed")
             else:
                 print("Failed to synchronize and load blockchain")
+                raise Exception("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
             # print("In BC_TRANSACTION_DATA action")
             block = make_node_block(data, client_user, data["data"]["prev_hash"], hash = data['data']['hash'])
