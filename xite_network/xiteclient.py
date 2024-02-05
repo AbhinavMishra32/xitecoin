@@ -1,13 +1,12 @@
-from multiprocessing import process
+from doctest import debug
 import socket
 import threading
 import traceback
-
-from flask import cli
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
 import json
+from util.debug import debug_log
 from termcolor import colored
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -72,6 +71,8 @@ def cl_handle_json(client, data: dict):
             send_whole_blockchain(client)
         elif action == "SYNC_BC":
             print("Received latest blockchain from server")
+            debug_log("LATEST BLOCKCHAIN: ") # debug
+            debug_log(colored(data, 'light_cyan')) # debug
             received_blockchain = Blockchain(data["bc_name"])
             if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
                 if received_blockchain.verify_blockchain():
@@ -217,7 +218,6 @@ def write():
             print(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']))
         # for i in range(1,5):
 
-
         # if client_user.user_exists(recipient):
         #     print("User exists")
         #     recp_user = User(recipient,client_user.blockchain)
@@ -258,8 +258,6 @@ def load_multiple_json_objects(data):
         return json_objects
     except json.JSONDecodeError as e:
         print(f"JSONDecodeError: {e}")
-
-import json
 
 def recv_msg():
     buffer = ""
