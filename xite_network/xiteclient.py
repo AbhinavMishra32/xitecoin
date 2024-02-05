@@ -69,26 +69,31 @@ def cl_handle_json(client, data: dict):
         if action == "SEND_BC":
             print("Sending whole blockchain")
             send_whole_blockchain(client)
-        elif action == "SYNC_BC":
-            print("Received latest blockchain from server")
-            debug_log("LATEST BLOCKCHAIN: ") # debug
-            debug_log(colored(data, 'light_cyan')) # debug
-            received_blockchain = Blockchain(data["bc_name"])
-            if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
-                if received_blockchain.verify_blockchain():
-                    print("Blockchain verification successful")
-                    # consensus algorithm:
-                    if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                        client_user.blockchain = received_blockchain
-                        print("Blockchain updated with longer chain from server")
-                    received_blockchain.save_blockchain()
-                    print("Blockchain saved successfully")
-                else:
-                    print("Error occurred while verifying blockchain")
-                    raise Exception("Blockchain verification failed")
-            else:
-                print("Failed to synchronize and load blockchain")
-                raise Exception("Failed to synchronize and load blockchain")
+        elif action == "SYNC_BC": #* someone asked by sending "SYNC_BC" action, now we have to send our blockchain
+
+            print("Received request to send blockchain")
+            send_whole_blockchain(client)
+
+
+            # print("Received latest blockchain from server")
+            # debug_log("LATEST BLOCKCHAIN: ") # debug
+            # debug_log(colored(data, 'light_cyan')) # debug
+            # received_blockchain = Blockchain(data["bc_name"])
+            # if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+            #     if received_blockchain.verify_blockchain():
+            #         print("Blockchain verification successful")
+            #         # consensus algorithm:
+            #         if len(received_blockchain.chain) > len(client_user.blockchain.chain):
+            #             client_user.blockchain = received_blockchain
+            #             print("Blockchain updated with longer chain from server")
+            #         received_blockchain.save_blockchain()
+            #         print("Blockchain saved successfully")
+            #     else:
+            #         print("Error occurred while verifying blockchain")
+            #         raise Exception("Blockchain verification failed")
+            # else:
+            #     print("Failed to synchronize and load blockchain")
+            #     raise Exception("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
             # print("In BC_TRANSACTION_DATA action")
             block = make_node_block(data, client_user, data["data"]["prev_hash"], hash = data['data']['hash'])
@@ -113,22 +118,16 @@ def cl_handle_json(client, data: dict):
                         print("--------------------")
                     print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
                     #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
-                    # for that 
                     client_user.blockchain.load_blockchain()
                     if len(client_user.blockchain.chain) > 0:
-                        # Check if the incoming chain length is greater than the local blockchain's length
                         if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
-                            # Check if the last block's hash in the local blockchain matches the previous hash in the incoming data
-                            if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
-                                print("Blockchain is outdated or previous hash of incoming block doesn't match local. Synchronizing blockchain.")
-                                synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
-                            else:
-                                print("Last block's hash doesn't match with the previous hash in the incoming data.")
-                        else:
-                            print("Incoming chain length is not greater than the local blockchain's length.")
-                    else:
-                        print("Local blockchain is empty.")
-
+                            debug_log("Incoming chain length is greater than the local blockchain's length.")
+                            synchronize_blockchain(client_user)
+                        if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
+                            debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
+                            # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
+                            # synchronize_blockchain(client_user, data["data"]["chain"])
+                            synchronize_blockchain(client_user)
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
                         # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
@@ -151,7 +150,7 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     if isinstance(data, set):
         data = list(data)
     json_data = {"action": action, "sender": sender, "data": data, "bc_name": client_user.blockchain.name}
-    json_data["data"].update(kwargs)
+    # json_data["data"].update(kwargs)
     return json.dumps(json_data)
         
 def send_whole_blockchain(client):
@@ -168,7 +167,7 @@ def make_block(recipient: str, amount: int):
         return None
     # return client_user.blockchain.chain[-1].to_dict()
 
-def synchronize_blockchain(user: XiteUser, chain: list):
+def synchronize_blockchain(user: XiteUser, chain: list = []):
     d = make_json({"Sync Blockchain": "Sync Blockchain"}, user.username, "SYNC_BC", chain = chain)
     client.send(d.encode())
 

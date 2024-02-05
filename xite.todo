@@ -1,3 +1,10 @@
 TODO: in line 112 in xiteclient.py [fix the syncing of blockchain]
 
 TODO: make syncing blockchain when sending a transaction and not mining it, recieve the latest blockchain.
+
+-----------latest------------
+after 6/2/24::::
+Whats hpappening: Currently when we recieve a transaction from someone who's chain length is greater than ours we send a "SYNC_BC" action
+which then is broadcasted to everyone (including us which we have to fix by recieving actions by name or just the "SYNC_BC" with the name), and because of this 
+we are saying to ourselfs also that we need our latest blockchain to ourself. but we need to ask the guy who's chain length is longer than use to send his chain.
+in the SYNC_BC action we need to send our "latest" blockchain to the guy that asked for it.
