@@ -8,3 +8,10 @@ Whats hpappening: Currently when we recieve a transaction from someone who's cha
 which then is broadcasted to everyone (including us which we have to fix by recieving actions by name or just the "SYNC_BC" with the name), and because of this 
 we are saying to ourselfs also that we need our latest blockchain to ourself. but we need to ask the guy who's chain length is longer than use to send his chain.
 in the SYNC_BC action we need to send our "latest" blockchain to the guy that asked for it.
+
+
+
+
+march 2024:
+
+the receiver should just do single verify of hash of recieving transaction instead of mining it, if it passes then add to local blockchain, if dont then reject

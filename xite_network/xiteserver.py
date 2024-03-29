@@ -3,6 +3,8 @@ import threading
 import json
 import traceback
 from termcolor import colored
+from util.debug import debug_log
+
 
 HOST = "localhost"
 PORT = 12345
@@ -72,6 +74,10 @@ def handle_choice(client: socket.socket, data):
         client.send(json.dumps({"[Message from Server] Connected to the server": ""}).encode())
         if data["action"] == "SEND_BC":
             client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
+            if data["reciever"]:
+                debug_log(f"SEND_BC reciver: {data['reciever']}")
+            else:
+                debug_log("SEND_BC reciever: None")
             return "MSG_MODE"
         if data["action"] == "BC_TRANSACTION_DATA":
             # print(" action: BC_TRANSACTION_DATA-------")
