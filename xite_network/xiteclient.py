@@ -9,7 +9,11 @@ from util.debug import debug_log
 from termcolor import colored
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(("localhost", 12345))
+try:
+    client.connect(("localhost", 12345))
+except ConnectionRefusedError as e:
+    print(colored(f"Server not started!", 'red'))
+    sys.exit(1)
 
 nicknames = []
 TRANSACTION_BUFFER = []
