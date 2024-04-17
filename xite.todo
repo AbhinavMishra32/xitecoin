@@ -15,3 +15,4 @@ in the SYNC_BC action we need to send our "latest" blockchain to the guy that as
 march 2024:
 
 the receiver should just do single verify of hash of recieving transaction instead of mining it, if it passes then add to local blockchain, if dont then reject
+
