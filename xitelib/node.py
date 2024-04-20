@@ -113,10 +113,13 @@ class Blockchain:
     - verify_single_block(blockchain: Blockchain, block: Block): Verifies the proof of work of a single block.
     - save_blockchain(): Saves the blockchain to a file.
     """
-    def __init__(self, name: str):
+    def __init__(self, name: str, init_load = False):
         self.chain: list[Block] = []
         self.name: str = name
         self.file_path = f"{self.name}.json"
+        
+        if init_load:
+            self.load_blockchain()
 
 
     # gives the merkel root to each block
@@ -126,6 +129,9 @@ class Blockchain:
             m_root += block.hash
             m_root = hashlib.sha256(m_root.encode()).hexdigest()
             block.merkel_root = hashlib.sha256(m_root.encode()).hexdigest()
+
+    def __len__(self) -> int:
+        return len(self.chain)
 
     def __getitem__(self, index) -> Block:
         return self.chain[index]

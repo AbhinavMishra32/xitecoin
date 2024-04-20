@@ -378,6 +378,9 @@ def args_parser():
     if len(sys.argv) != 4:
         print("Usage: python3 xiteclient.py <username> <password> [MINE]: True / False")
         sys.exit(1)
+
+    # implement login system for username and password:
+
     username = sys.argv[1]
     password = sys.argv[2]
     set_mine(sys.argv[3])
@@ -385,7 +388,7 @@ def args_parser():
 
 if __name__ == "__main__":
     username, password = args_parser()
-    xc = Blockchain(f"xc_{username}")
+    xc = Blockchain(f"xc_{username}", init_load = True)
 
     client_user = XiteUser(username, password, xc)  
     # req_bc_update(client_user.username)
@@ -394,7 +397,7 @@ if __name__ == "__main__":
     # NOW UPDATE BLOCKCHAIN WITH SYNCED VERSION BEFORE ANY TRANSACTION
 
     client_user = XiteUser(username, password, xc)
-    client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
+    client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME", "chain_length" : len(xc)}).encode())
 
     write_thread = threading.Thread(target=write)
     write_thread.start()

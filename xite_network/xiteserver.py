@@ -17,6 +17,10 @@ server.listen()
 clients = []
 nicknames = {}
 
+t_nicks = [nicknames.values() for _ in nicknames]
+c_lens = []
+c_len_nick = dict(zip(t_nicks, c_lens))
+
 def broadcast(message):
     try:
         for client_socket in clients:
@@ -52,6 +56,7 @@ def handle_choice(client: socket.socket, data):
         actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC']
 
         if data["action"] != "SENDER_NAME":
+            c_lens.append(int(data["data"]["data"]["chain_length"]))
             print(data["data"]["data"]["chain_length"])
         try:
             if data["action"] == "SENDER_NAME":
@@ -66,6 +71,7 @@ def handle_choice(client: socket.socket, data):
                 # Add the new client, regardless of whether an old client was found
                 nicknames[client] = nickname
                 print(f"{nickname} added to clients list")
+                c_lens.append(int(data["data"]["data"]["chain_length"]))
                 clients.append(client)
                 nickname_list= []
                 for _ in nicknames:
