@@ -83,22 +83,19 @@ def cl_handle_json(client, data: dict):
             debug_log(data)
             chain_length = data["data"]["chain_length"]
             print(colored(f"RECIEVED CHAIN LENGTH: {chain_length}", 'yellow'))
+            global LONGEST_CHAIN_LENGTH
+            LONGEST_CHAIN_LENGTH = chain_length
             if chain_length > len(client_user.blockchain):
-                global LONGEST_CHAIN_LENGTH
-                LONGEST_CHAIN_LENGTH = chain_length
                 global IS_LONGEST_CHAIN
                 IS_LONGEST_CHAIN = False
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # req_bc_update(client_user.username)
             elif chain_length <= len(client_user.blockchain):
-                LONGEST_CHAIN_LENGTH = chain_length
                 IS_LONGEST_CHAIN = True
                 debug_log("Blockchain is up to date.")
+            chain_len_status()
                 # req_bc_update(client_user.username)
-
-        if action == "CHECK_BC_LEN":
-            pass
         if action == "UPDATE_BC":
             pass
 
@@ -465,7 +462,9 @@ if __name__ == "__main__":
 
     print("Checking blockchain length before making logging in...")
     check_bc_len(xc)
-    chain_len_status()
+
+    print("printing LONGEST_CHAIN_LENGTH :-")
+    print(LONGEST_CHAIN_LENGTH)
     write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)
