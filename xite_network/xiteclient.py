@@ -23,7 +23,9 @@ nicknames = []
 TRANSACTION_BUFFER = []
 MINE = False
 
-LONGEST_CHAIN = False
+IS_LONGEST_CHAIN = False
+LONGEST_CHAIN_LENGTH = 0
+
 
 def set_mine(mine: str):
     global MINE
@@ -76,17 +78,27 @@ def cl_handle_json(client, data: dict):
 
         action = data.get("action")
 
-        if action == "CHECK_BC_LEN" and data.get("reciever") == client_user.username:
-            chain_length = data.get("chain_length")
-            if chain_length is not None and chain_length > len(client_user.blockchain.chain):
+        if action == "C_LEN_BROADCAST" and data["data"]["reciever"] == client_user.username:
+            debug_log("reciever: " ,data["data"]["reciever"])
+            debug_log(data)
+            chain_length = data["data"]["chain_length"]
+            print(colored(f"RECIEVED CHAIN LENGTH: {chain_length}", 'yellow'))
+            if chain_length > len(client_user.blockchain):
+                global LONGEST_CHAIN_LENGTH
+                LONGEST_CHAIN_LENGTH = chain_length
+                global IS_LONGEST_CHAIN
+                IS_LONGEST_CHAIN = False
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
-                global LONGEST_CHAIN
-                LONGEST_CHAIN = False
+                #now that we know there is a longer chain available, we request the blockchain from the sender
                 # req_bc_update(client_user.username)
-            else:
+            elif chain_length <= len(client_user.blockchain):
+                LONGEST_CHAIN_LENGTH = chain_length
+                IS_LONGEST_CHAIN = True
                 debug_log("Blockchain is up to date.")
-                LONGEST_CHAIN = True
-                req_bc_update(client_user.username)
+                # req_bc_update(client_user.username)
+
+        if action == "CHECK_BC_LEN":
+            pass
         if action == "UPDATE_BC":
             pass
 
@@ -299,11 +311,22 @@ def req_bc_update(rec_name: str):
 # def bc_update(sen = False, data):
 #     pass
 
-def check_bc_len(bc:Blockchain) -> bool:
-    debug_log("INSIDE CHECK_BC_LEN FUNCTION")
-    client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "chain_length": len(bc)}).encode())
-    if 
+def chain_len_status():
+    if IS_LONGEST_CHAIN:
+        print(colored("Blockchain is up to date", 'green'))
+        print(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'green'))
+    else:
+        print(colored("Blockchain is not up to date", 'red'))
+        print(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'red'))
 
+def check_bc_len(bc:Blockchain) -> bool:
+    """
+    Returns a bool value indicating whether the blockchain is the longest chain or not.
+    uses the CHECK_BC_LEN action to check the length of the blockchain
+    """
+    debug_log("INSIDE CHECK_BC_LEN FUNCTION")
+    client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "reciever": "server", "chain_length": len(bc)}).encode())
+    return IS_LONGEST_CHAIN
 def write(bc: Blockchain):
     # print("write thread started")
     while True:
@@ -314,6 +337,8 @@ def write(bc: Blockchain):
             amount = int(payment.split(' ')[1])
             print("Checking blockchain length before making transaction...")
             check_bc_len(bc)
+            chain_len_status()
+
             make_transaction(recipient, amount, client_user.blockchain)
         except Exception:
             # print("IndexError occurred while handling json")
@@ -396,6 +421,7 @@ def recv_msg():
         
 
 
+
 def print_transaction_data(transaction_data, repeat=False):
     try:
         print(colored("\nBlock Data:", 'yellow'), end="\r" if repeat else "\n")
@@ -439,6 +465,7 @@ if __name__ == "__main__":
 
     print("Checking blockchain length before making logging in...")
     check_bc_len(xc)
+    chain_len_status()
     write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)

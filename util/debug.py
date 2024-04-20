@@ -3,7 +3,7 @@ import inspect
 import os
 
 def debug_log(*args, **kwargs):
-    caller = inspect.currentframe()
+    caller = inspect.currentframe().f_back
     if caller is not None:
         filename = os.path.basename(caller.f_code.co_filename)
         func_name = caller.f_code.co_name

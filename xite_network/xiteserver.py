@@ -2,7 +2,6 @@ import socket
 import threading
 import json
 import traceback
-from annotated_types import MaxLen
 from termcolor import colored
 from util.debug import debug_log
 
@@ -25,6 +24,7 @@ def broadcast(message):
         for client_socket in clients:
             client_socket.send(message)
             print(colored(f"Message sent to {nicknames[client_socket]}", 'green'))
+            return message.decode()
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
         
@@ -41,6 +41,8 @@ def handle(client: socket.socket):
             # broadcast(data_recvd.encode())
         except Exception as e:
             print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
+            print(data)
+            traceback.print_exc()
             if client.fileno() == -1:
                 break
             else:
@@ -86,7 +88,7 @@ def handle_choice(client: socket.socket, data):
                 print(colored(f"NICKNAMES: {nickname_list}", 'yellow'))  # Moved inside the else block
                 print(colored(f"NO. OF CLIENTS: {len(clients)}", 'yellow'))
         except Exception as e:
-            print(f"Error occured while appending client to clients list: {type(e).__name__}, {e.args}")
+            print(f"Error occurred while appending client to clients list: {type(e).__name__}, {e.args}")
         client.send(json.dumps({"[Message from Server] Connected to the server": ""}).encode())
         if data["action"] == "SEND_BC":
             client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
@@ -98,9 +100,7 @@ def handle_choice(client: socket.socket, data):
         if data["action"] == "BC_TRANSACTION_DATA":
             ch_len_dict[data["sender"]] = data["data"]["data"]["chain_length"]
             debug_log(f"CHAIN DICT: {ch_len_dict}")
-            # print(" action: BC_TRANSACTION_DATA-------")
-            # print(data["data"])
-            print("broadcasting the json")
+            print("broadcasting the json, action: BC_TRANSACTION_DATA :-")
             broadcast(json.dumps(data).encode())
         if data["action"] == "SYNC_BC":
             print("broadcasting json for synchronizing blockchain")
@@ -109,25 +109,25 @@ def handle_choice(client: socket.socket, data):
         if data["action"] == "CHECK_BC_LEN":
             debug_log("in CHECK_BC_LEN action")
             print("Checking blockchain length")
-            print(f"CHAIN LENGTH: {ch_len_dict}")
-            # max_len, max_name = get_latest_bc_dict(ch_len_dict)
+            print(f"MAX CHAIN LENGTH: {max(ch_len_dict.values())}")
+            max_len, max_name = get_latest_bc_dict(ch_len_dict)
             print(f"CHAIN LENGTH DICT: {ch_len_dict}")
-            # print(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
-            # client.send(json.dumps({"action": "C_LEN_BRODCAST", "data": {"chain_length": max_len, "reciever": data["sender"]}}).encode())
+            print(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
             print("broadcasting the json from CHECK_BC_LEN action...")
-            broadcast(json.dumps(data).encode())
-            #now broadcasting to the client having the max length to give their chain
-            # broadcast(json.dumps({"action": "SEND_BC", "sender": max_name, "reciever": data["sender"]}).encode()) #reciever is the person who requested the chain, sender is the client with max chain length
+            sender_client: socket.socket = next((c for c in clients if nicknames[c] == data["sender"]), None)
+            sender_client.send(json.dumps({"action": "C_LEN_BROADCAST", "data": {"chain_length": max_len, "reciever": data["sender"]}}).encode())
+            # now broadcasting to the client having the max length to give their chain
+            # broadcast(json.dumps({"action": "SEND_BC", "sender": max_name, "reciever": data["sender"]}).encode()) # reciever is the person who requested the chain, sender is the client with max chain length
 
-        if data["action"] == "C_LEN_BRODCAST":
-            # print("broadcasting the json")
-            # broadcast(json.dumps(data).encode())
-            pass
+            if data["action"] == "C_LEN_BROADCAST":
+                # print("broadcasting the json")
+                # broadcast(json.dumps(data).encode())
+                pass
 
-        if data["action"] not in actions:
-            print(colored("No valid action specified, so here is the original json:", 'light_red'))
-            print(colored(data, 'light_red'))
-            print("broadcasting the json")
+            if data["action"] not in actions:
+                print(colored("No valid action specified, so here is the original json:", 'light_red'))
+                print(colored(data, 'light_red'))
+                debug_log("broadcasting the json, action: None")
             broadcast(json.dumps(data).encode())
     except Exception as e:
         print(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
