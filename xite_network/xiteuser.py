@@ -11,7 +11,7 @@ class BlockMiningFailedException(Exception):
 
 class XiteUser(User):
     '''
-    this class is used to create a user and store it in the database
+    This is a subclass of the User class. It is used to create a user object with a username, password and a blockchain object.
     '''
     def __init__(self, username: str, password: str, blockchain: Blockchain):
         super().__init__(username, blockchain)

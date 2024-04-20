@@ -50,6 +50,9 @@ def handle_choice(client: socket.socket, data):
         print(colored(f"[CLIENT]: {data}", 'cyan'))
         print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
         actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC']
+
+        if data["action"] != "SENDER_NAME":
+            print(data["data"]["data"]["chain_length"])
         try:
             if data["action"] == "SENDER_NAME":
                 nickname = data["sender"]
