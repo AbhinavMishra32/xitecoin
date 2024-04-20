@@ -1,3 +1,5 @@
+from pickle import LONG
+from pyexpat.model import XML_CQUANT_NONE
 import socket
 import threading
 import traceback
@@ -20,6 +22,8 @@ except ConnectionRefusedError as e:
 nicknames = []
 TRANSACTION_BUFFER = []
 MINE = False
+
+LONGEST_CHAIN = False
 
 def set_mine(mine: str):
     global MINE
@@ -60,7 +64,7 @@ def recieve_dbug():
 def cl_handle_json(client, data: dict):
     # print("in cl_handle_json: ")
     try:
-        sender = data.get("sender")
+        sender = data.get("sender") or data.get("reciever")
         if sender:
             if sender not in nicknames:
                 nicknames.append(sender)
@@ -72,22 +76,49 @@ def cl_handle_json(client, data: dict):
 
         action = data.get("action")
 
-        if action == "UPDATE_BC":
-            print("Received request to update blockchain")
-            previous_client = data.get("sender")
-            #only send blockchain once per client
-            if sender != previous_client:
-                print("Sending length of blockchain")
-                
-                # send_whole_blockchain(client, str(data.get("sender")))
-                # bc_update(send = False, )
-
+        if action == "CHECK_BC_LEN" and data.get("reciever") == client_user.username:
+            chain_length = data.get("chain_length")
+            if chain_length is not None and chain_length > len(client_user.blockchain.chain):
+                debug_log("There is a longer blockchain available. Requesting blockchain update.")
+                global LONGEST_CHAIN
+                LONGEST_CHAIN = False
+                # req_bc_update(client_user.username)
             else:
-                print("Sender is same as previous client, not sending blockchain")    
+                debug_log("Blockchain is up to date.")
+                LONGEST_CHAIN = True
+                req_bc_update(client_user.username)
+        if action == "UPDATE_BC":
+            pass
 
+        if action == "SEND_BC" and (data.get("sender") == client_user.username or data.get("reciever") == client_user.username):
+            #if reciever is this client, then only recieve the blockchain 
+            if data.get("reciever") == client_user.username:
+                print("Received blockchain from:", data.get("sender"))
+                print(colored(data, 'light_cyan'))
+                received_blockchain = Blockchain(data["bc_name"])
+                if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+                    if received_blockchain.verify_blockchain():
+                        print("Blockchain verification successful")
+                        # consensus algorithm:
+                        if len(received_blockchain.chain) > len(client_user.blockchain.chain):
+                            client_user.blockchain = received_blockchain
+                            print("Blockchain updated with longer chain from server")
+                        received_blockchain.save_blockchain()
+                        print("Blockchain saved successfully")
+                    else:
+                        print("Error occurred while verifying blockchain")
+                        raise Exception("Blockchain verification failed")
+                else:
+                    print("Failed to synchronize and load blockchain")
+                    raise Exception("Failed to synchronize and load blockchain")
+            # if sender is this client, then only send the blockchain
 
-        if action == "SEND_BC":
-            print("Sending whole blockchain")
+            if data.get("sender") == client_user.username:
+                print("Sending whole blockchain to client: ", data.get("reciever"))
+                send_whole_blockchain(client, str(data.get("sender")))
+
+            # the if statement makes sure that this client is sending the blockchain and not anybody else implying that this client has the longest chain
+            print("Sending whole blockchain to client: ", data.get("reciever"))
             if data.get("reciever") == client_user.username:
                 print("Received blockchain from:", data.get("sender"))
                 print(colored(data, 'light_cyan'))
@@ -262,13 +293,18 @@ def c_len_update(blockchain: Blockchain):
     # send_data = make_json()
 
 def req_bc_update(rec_name: str):
-    client.send(make_json({"Update Blockchain": "Update Blockchain"}, client_user.username, "UPDATE_BC", kwargs={"reciever": rec_name}).encode())
+    client.send(json.dumps({"action": "UPDATE_BC", "sender": rec_name}).encode())
 
 
 # def bc_update(sen = False, data):
 #     pass
 
-def write():
+def check_bc_len(bc:Blockchain) -> bool:
+    debug_log("INSIDE CHECK_BC_LEN FUNCTION")
+    client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "chain_length": len(bc)}).encode())
+    if 
+
+def write(bc: Blockchain):
     # print("write thread started")
     while True:
         print("---------XITECOIN---------")
@@ -276,6 +312,8 @@ def write():
         try:
             recipient = payment.split(' ')[0]
             amount = int(payment.split(' ')[1])
+            print("Checking blockchain length before making transaction...")
+            check_bc_len(bc)
             make_transaction(recipient, amount, client_user.blockchain)
         except Exception:
             # print("IndexError occurred while handling json")
@@ -399,7 +437,9 @@ if __name__ == "__main__":
     client_user = XiteUser(username, password, xc)
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME", "chain_length" : len(xc)}).encode())
 
-    write_thread = threading.Thread(target=write)
+    print("Checking blockchain length before making logging in...")
+    check_bc_len(xc)
+    write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)
     receive_thread.start()

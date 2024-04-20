@@ -2,6 +2,7 @@ import socket
 import threading
 import json
 import traceback
+from annotated_types import MaxLen
 from termcolor import colored
 from util.debug import debug_log
 
@@ -17,9 +18,7 @@ server.listen()
 clients = []
 nicknames = {}
 
-t_nicks = [nicknames.values() for _ in nicknames]
-c_lens = []
-c_len_nick = dict(zip(t_nicks, c_lens))
+ch_len_dict = {}
 
 def broadcast(message):
     try:
@@ -49,17 +48,25 @@ def handle(client: socket.socket):
                 # Continue to the next iteration of the loop to try to receive more data
                 continue
 
+def get_latest_bc_dict(c_len_dict: dict) -> tuple:
+    max_name = max(c_len_dict, key=c_len_dict.get)
+    max_len = c_len_dict[max_name]
+    return max_len, max_name
+
 def handle_choice(client: socket.socket, data):
     try:
         print(colored(f"[CLIENT]: {data}", 'cyan'))
         print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
-        actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC']
+        actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC', 'CHECK_BC_LEN']
 
-        if data["action"] != "SENDER_NAME":
-            c_lens.append(int(data["data"]["data"]["chain_length"]))
-            print(data["data"]["data"]["chain_length"])
+        # if data["action"] != "SENDER_NAME":
+        #     # c_lens.append(int(data["data"]["data"]["chain_length"]))
+        #     ch_len_dict[data["sender"]] = data["data"]["data"]["chain_length"]
+        #     print(data["sender"],data["data"]["data"]["chain_length"])
         try:
             if data["action"] == "SENDER_NAME":
+                ch_len_dict[data["sender"]] = data["chain_length"]
+                # print(data["sender"],data["data"]["data"]["chain_length"])
                 nickname = data["sender"]
                 if nickname in nicknames.values():  # Check the values of the nicknames dictionary
                     # Find the old client with the same nickname
@@ -71,7 +78,7 @@ def handle_choice(client: socket.socket, data):
                 # Add the new client, regardless of whether an old client was found
                 nicknames[client] = nickname
                 print(f"{nickname} added to clients list")
-                c_lens.append(int(data["data"]["data"]["chain_length"]))
+
                 clients.append(client)
                 nickname_list= []
                 for _ in nicknames:
@@ -89,6 +96,8 @@ def handle_choice(client: socket.socket, data):
                 debug_log("SEND_BC reciever: None")
             return "MSG_MODE"
         if data["action"] == "BC_TRANSACTION_DATA":
+            ch_len_dict[data["sender"]] = data["data"]["data"]["chain_length"]
+            debug_log(f"CHAIN DICT: {ch_len_dict}")
             # print(" action: BC_TRANSACTION_DATA-------")
             # print(data["data"])
             print("broadcasting the json")
@@ -96,6 +105,19 @@ def handle_choice(client: socket.socket, data):
         if data["action"] == "SYNC_BC":
             print("broadcasting json for synchronizing blockchain")
             broadcast(json.dumps(data).encode())
+
+        if data["action"] == "CHECK_BC_LEN":
+            debug_log("in CHECK_BC_LEN action")
+            print("Checking blockchain length")
+            print(f"CHAIN LENGTH: {ch_len_dict}")
+            # max_len, max_name = get_latest_bc_dict(ch_len_dict)
+            print(f"CHAIN LENGTH DICT: {ch_len_dict}")
+            # print(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
+            # client.send(json.dumps({"action": "C_LEN_BRODCAST", "data": {"chain_length": max_len, "reciever": data["sender"]}}).encode())
+            print("broadcasting the json from CHECK_BC_LEN action...")
+            broadcast(json.dumps(data).encode())
+            #now broadcasting to the client having the max length to give their chain
+            # broadcast(json.dumps({"action": "SEND_BC", "sender": max_name, "reciever": data["sender"]}).encode()) #reciever is the person who requested the chain, sender is the client with max chain length
 
         if data["action"] == "C_LEN_BRODCAST":
             # print("broadcasting the json")
@@ -109,7 +131,7 @@ def handle_choice(client: socket.socket, data):
             broadcast(json.dumps(data).encode())
     except Exception as e:
         print(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
-        print(colored(data, 'red'))
+        print("Faulty action:", colored(data, 'red'))
         traceback.print_exc()
         # index = clients.index(client)
         # clients.remove(client)
