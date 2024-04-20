@@ -21,7 +21,8 @@ add initial syncing
 if local blockchain isnt latest (lesser blocks than other people) then request random n no. of people, to give their chain length, then compare those chain length to see whose' is
 longest then take their chain and download it to our local copy
 
-
+after 21 april:
+the client is now able to determine if its blockchain is latest or not, now use send_whole_blockchain and SEND_BC action to sync the blockchains
 
 
 
