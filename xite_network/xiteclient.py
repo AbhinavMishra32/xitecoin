@@ -91,6 +91,7 @@ def cl_handle_json(client, data: dict):
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # req_bc_update(client_user.username)
+                send_whole_blockchain(client, client_user.username)
             elif chain_length <= len(client_user.blockchain):
                 IS_LONGEST_CHAIN = True
                 debug_log("Blockchain is up to date.")
@@ -303,6 +304,7 @@ def c_len_update(blockchain: Blockchain):
 
 def req_bc_update(rec_name: str):
     client.send(json.dumps({"action": "UPDATE_BC", "sender": rec_name}).encode())
+
 
 
 # def bc_update(sen = False, data):
