@@ -88,6 +88,11 @@ def handle_choice(client: socket.socket, data):
             print("broadcasting json for synchronizing blockchain")
             broadcast(json.dumps(data).encode())
 
+        if data["action"] == "C_LEN_BRODCAST":
+            # print("broadcasting the json")
+            # broadcast(json.dumps(data).encode())
+            pass
+
         if data["action"] not in actions:
             print(colored("No valid action specified, so here is the original json:", 'light_red'))
             print(colored(data, 'light_red'))
@@ -103,6 +108,7 @@ def handle_choice(client: socket.socket, data):
         # nickname = nicknames[index]
         # broadcast(f"{nickname} left the network".encode())
         # nicknames.remove(nickname)
+        
 
 def recieve():
     try:

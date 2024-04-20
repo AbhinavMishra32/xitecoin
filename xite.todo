@@ -17,6 +17,12 @@ march 2024:
 the receiver should just do single verify of hash of recieving transaction instead of mining it, if it passes then add to local blockchain, if dont then reject
 
 
+add initial syncing
+if local blockchain isnt latest (lesser blocks than other people) then request random n no. of people, to give their chain length, then compare those chain length to see whose' is
+longest then take their chain and download it to our local copy
+
+
+
 
 
 

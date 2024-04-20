@@ -10,6 +10,7 @@ from termcolor import colored
 
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 try:
     client.connect(("localhost", 12345))
 except ConnectionRefusedError as e:
@@ -70,6 +71,11 @@ def cl_handle_json(client, data: dict):
             print(colored("No sender specified", 'light_red'))
 
         action = data.get("action")
+
+        if action == "UPDATE_BC":
+            print("Received request to update blockchain")
+            # req_bc_update()
+
         if action == "SEND_BC":
             print("Sending whole blockchain")
             if data.get("reciever") == client_user.username:
@@ -237,6 +243,23 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
         client.send(json.dumps(send_data).encode())
     print(colored("Sent transaction data", 'green'))
 
+#temporary method for updating chain length, length is updated by the server, 
+#TODO: implement this
+def c_len_update(blockchain: Blockchain):
+    t = Blockchain(blockchain.name)
+    t.load_blockchain()
+    chain_length = len(t.chain)
+    # send_data = make_json()
+
+def req_bc_update():
+    client.send(make_json({"Update Blockchain": "Update Blockchain"}, client_user.username, "UPDATE_BC").encode())
+
+def bc_update(rec = False,sen = False, clients = []):
+    
+    if rec:
+        for client in clients:
+            client.send(json.dumps({"action": "UPDATE_BC", "sender": client_user.username}).encode())
+
 def write():
     # print("write thread started")
     while True:
@@ -352,12 +375,17 @@ if __name__ == "__main__":
     password = sys.argv[2]
     set_mine(sys.argv[3])
 
+    #get updated blockchain from server which gets from other nodes so technically p2p then update the blockchain before making transaction
+
     xc = Blockchain(f"xc_{username}")
     # if not tb.load_blockchain():
     #     tb.create_genesis_block()
     #     tb.save_blockchain()
     # if len(tb.chain) == 0:
     #     tb.create_genesis_block()
+    client_user = XiteUser(username, password, xc)  
+    req_bc_update()
+    # NOW UPDATE BLOCKCHAIN WITH SYNCED VERSION BEFORE ANY TRANSACTION
     client_user = XiteUser(username, password, xc)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
