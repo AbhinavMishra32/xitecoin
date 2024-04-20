@@ -1,3 +1,5 @@
+# debug.py
+
 from termcolor import colored
 import inspect
 import os
@@ -10,6 +12,9 @@ def debug_log(*args, **kwargs):
         line_num = caller.f_lineno
         debug_info = f"[DEBUG] {filename}::{func_name} (line {line_num}):"
         message = ' '.join(map(str, args))
-        print(colored(f"{debug_info} {message}", 'yellow'))
+        print(colored(f"{debug_info} {message}", 'yellow'), **kwargs)
     else:
         print(colored("[DEBUG] (unknown):", 'yellow'), *args, **kwargs)
+
+# Override the built-in print function with debug_log
+print = debug_log

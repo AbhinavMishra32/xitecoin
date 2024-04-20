@@ -8,6 +8,7 @@ import json
 from util.debug import debug_log
 from termcolor import colored
 
+
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client.connect(("localhost", 12345))
@@ -345,19 +346,19 @@ def print_transaction_data(transaction_data, repeat=False):
 
 if __name__ == "__main__":
     if len(sys.argv) != 4:
-        print("Usage: python3 xiteclient.py <username> <password> [MINE]")
+        print("Usage: python3 xiteclient.py <username> <password> [MINE]: True / False")
         sys.exit(1)
     username = sys.argv[1]
     password = sys.argv[2]
     set_mine(sys.argv[3])
 
-    tb = Blockchain(f"tb_{username}")
+    xc = Blockchain(f"xc_{username}")
     # if not tb.load_blockchain():
     #     tb.create_genesis_block()
     #     tb.save_blockchain()
     # if len(tb.chain) == 0:
     #     tb.create_genesis_block()
-    client_user = XiteUser(username, password, tb)
+    client_user = XiteUser(username, password, xc)
 
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME"}).encode())
 
