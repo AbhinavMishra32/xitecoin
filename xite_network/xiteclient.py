@@ -97,38 +97,31 @@ def cl_handle_json(client, data: dict):
                 debug_log("Blockchain is up to date.")
             chain_len_status()
                 # req_bc_update(client_user.username)
-        if action == "UPDATE_BC":
-            pass
-
-        if action == "SEND_BC" and (data.get("sender") == client_user.username or data.get("reciever") == client_user.username):
-            #if reciever is this client, then only recieve the blockchain 
-            if data.get("reciever") == client_user.username:
-                print("Received blockchain from:", data.get("sender"))
-                print(colored(data, 'light_cyan'))
-                received_blockchain = Blockchain(data["bc_name"])
-                if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
-                    if received_blockchain.verify_blockchain():
-                        print("Blockchain verification successful")
-                        # consensus algorithm:
-                        if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                            client_user.blockchain = received_blockchain
-                            print("Blockchain updated with longer chain from server")
-                        received_blockchain.save_blockchain()
-                        print("Blockchain saved successfully")
-                    else:
-                        print("Error occurred while verifying blockchain")
-                        raise Exception("Blockchain verification failed")
-                else:
-                    print("Failed to synchronize and load blockchain")
-                    raise Exception("Failed to synchronize and load blockchain")
-            # if sender is this client, then only send the blockchain
-
-            if data.get("sender") == client_user.username:
-                print("Sending whole blockchain to client: ", data.get("reciever"))
-                send_whole_blockchain(client, str(data.get("sender")))
-
-            # the if statement makes sure that this client is sending the blockchain and not anybody else implying that this client has the longest chain
+        if action == "SEND_BC" and data.get("sender") == client_user.username:
             print("Sending whole blockchain to client: ", data.get("reciever"))
+            send_whole_blockchain(client, str(data.get("sender")))
+
+        if action == "GET_BC" and data.get("reciever") == client_user.username:
+            #if reciever is this client, then only recieve the blockchain 
+            print("Received blockchain from:", data.get("sender"))
+            print(colored(data, 'light_cyan'))
+            received_blockchain = Blockchain(data["bc_name"])
+            if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+                if received_blockchain.verify_blockchain():
+                    print("Blockchain verification successful")
+                    # consensus algorithm:
+                    if len(received_blockchain.chain) > len(client_user.blockchain.chain):
+                        client_user.blockchain = received_blockchain
+                        print("Blockchain updated with longer chain from server")
+                    received_blockchain.save_blockchain()
+                    print("Blockchain saved successfully")
+                else:
+                    print("Error occurred while verifying blockchain")
+                    raise Exception("Blockchain verification failed")
+            else:
+                print("Failed to synchronize and load blockchain")
+                raise Exception("Failed to synchronize and load blockchain")
+
             if data.get("reciever") == client_user.username:
                 print("Received blockchain from:", data.get("sender"))
                 print(colored(data, 'light_cyan'))

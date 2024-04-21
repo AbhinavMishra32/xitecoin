@@ -51,7 +51,7 @@ def handle(client: socket.socket):
                 continue
 
 def get_latest_bc_dict(c_len_dict: dict) -> tuple:
-    max_name = max(c_len_dict, key=c_len_dict.get)
+    max_name = max(c_len_dict, key=c_len_dict.get) # type: ignore
     max_len = c_len_dict[max_name]
     return max_len, max_name
 
@@ -114,7 +114,7 @@ def handle_choice(client: socket.socket, data):
             print(f"CHAIN LENGTH DICT: {ch_len_dict}")
             print(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
             print("broadcasting the json from CHECK_BC_LEN action...")
-            sender_client: socket.socket = next((c for c in clients if nicknames[c] == data["sender"]), None)
+            sender_client: socket.socket = next((c for c in clients if nicknames[c] == data["sender"]), None) #type: ignore
             sender_client.send(json.dumps({"action": "C_LEN_BROADCAST", "data": {"chain_length": max_len, "reciever": data["sender"]}}).encode())
             # now broadcasting to the client having the max length to give their chain
             # broadcast(json.dumps({"action": "SEND_BC", "sender": max_name, "reciever": data["sender"]}).encode()) # reciever is the person who requested the chain, sender is the client with max chain length
