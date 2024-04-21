@@ -3,6 +3,7 @@ from pyexpat.model import XML_CQUANT_NONE
 import socket
 import threading
 import traceback
+from util import debug
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
@@ -25,6 +26,7 @@ MINE = False
 
 IS_LONGEST_CHAIN = False
 LONGEST_CHAIN_LENGTH = 0
+LONGEST_CLIENT_NAME = ""
 
 
 def set_mine(mine: str):
@@ -83,70 +85,45 @@ def cl_handle_json(client, data: dict):
             debug_log(data)
             chain_length = data["data"]["chain_length"]
             print(colored(f"RECIEVED CHAIN LENGTH: {chain_length}", 'yellow'))
+            global LONGEST_CHAIN_CLIENT_NAME
             global LONGEST_CHAIN_LENGTH
+            LONGEST_CHAIN_CLIENT_NAME = data["data"]["lgt_c_name"]
             LONGEST_CHAIN_LENGTH = chain_length
             if chain_length > len(client_user.blockchain):
                 global IS_LONGEST_CHAIN
                 IS_LONGEST_CHAIN = False
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
-                # req_bc_update(client_user.username)
-                send_whole_blockchain(client, client_user.username)
+                # sync_bc(client, data, client_user.username, recv = True) #this function here wont work as the data is this: {'action': 'C_LEN_BROADCAST', 'data': {'chain_length': 21, 'reciever': 'Abhinav2', 'lgt_c_name': 'Abhinav1'}}, we need the blockchain data to recieve, not the chain length broadcast data
+                client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+
             elif chain_length <= len(client_user.blockchain):
                 IS_LONGEST_CHAIN = True
                 debug_log("Blockchain is up to date.")
             chain_len_status()
                 # req_bc_update(client_user.username)
-        if action == "SEND_BC" and data.get("sender") == client_user.username:
-            print("Sending whole blockchain to client: ", data.get("reciever"))
-            send_whole_blockchain(client, str(data.get("sender")))
 
-        if action == "GET_BC" and data.get("reciever") == client_user.username:
-            #if reciever is this client, then only recieve the blockchain 
-            print("Received blockchain from:", data.get("sender"))
-            print(colored(data, 'light_cyan'))
-            received_blockchain = Blockchain(data["bc_name"])
-            if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
-                if received_blockchain.verify_blockchain():
-                    print("Blockchain verification successful")
-                    # consensus algorithm:
-                    if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                        client_user.blockchain = received_blockchain
-                        print("Blockchain updated with longer chain from server")
-                    received_blockchain.save_blockchain()
-                    print("Blockchain saved successfully")
-                else:
-                    print("Error occurred while verifying blockchain")
-                    raise Exception("Blockchain verification failed")
-            else:
-                print("Failed to synchronize and load blockchain")
-                raise Exception("Failed to synchronize and load blockchain")
+        if action == "WANT_BC" and data["sender"] == client_user.username:
+            debug_log("INSIDE WANT_BC ACTION")
+            # the person wants the blockchain, so we send it to them because sender is our username, we are sending it to the "reciever" client
+            sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
+            #now we will send bc with GIVE_BC action
+            # client.send(json.dumps({"action": "SEND_BC", "sender": client_user.username, "reciever": data["reciever"]}).encode())
 
-            if data.get("reciever") == client_user.username:
-                print("Received blockchain from:", data.get("sender"))
-                print(colored(data, 'light_cyan'))
-                received_blockchain = Blockchain(data["bc_name"])
-                if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
-                    if received_blockchain.verify_blockchain():
-                        print("Blockchain verification successful")
-                        # consensus algorithm:
-                        if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                            client_user.blockchain = received_blockchain
-                            print("Blockchain updated with longer chain from server")
-                        received_blockchain.save_blockchain()
-                        print("Blockchain saved successfully")
-                    else:
-                        print("Error occurred while verifying blockchain")
-                        raise Exception("Blockchain verification failed")
-                else:
-                    print("Failed to synchronize and load blockchain")
-                    raise Exception("Failed to synchronize and load blockchain")
+        # if action == "GET_BC":
+        #     debug_log("INSIDE GET_BC ACTION")
+        #     # if data.get("reciever") == client_user.username:
+        #     #     sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GET_BC action")), recv = True)
 
-            send_whole_blockchain(client, str(data.get("sender")))
+        #     if data.get("sender") == client_user.username:
+        #         sync_bc(client, data, reciever = data.get("reciever", KeyError("No reciever found in GET_BC action")), send = True)
+
+        #     if data.get("reciever") == client_user.username:
+        #         sync_bc(client, str(data.get("sender")))
         elif action == "SYNC_BC": #* someone asked by sending "SYNC_BC" action, now we have to send our blockchain
             if data.get("sender") == client_user.username:
                 print("Received request to send blockchain")
-                send_whole_blockchain(client, )
+                # sync_bc(client, )
 
 
 
@@ -198,14 +175,14 @@ def cl_handle_json(client, data: dict):
                         if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
                             debug_log("Incoming chain length is greater than the local blockchain's length.")
                             # synchronize_blockchain(client_user, data["sender"])
-                            send_whole_blockchain(client, client_user.name)
+                            sync_bc(client, client_user.name)
 
                         if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
                             debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
                             # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
                             # synchronize_blockchain(client_user, data["data"]["chain"])
                             # synchronize_blockchain(client_user, data["sender"])
-                            send_whole_blockchain(client, client_user.name)
+                            sync_bc(client, client_user.name)
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
                         # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
@@ -233,15 +210,43 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     # json_data["data"].update(kwargs)
     return json.dumps(json_data)
         
-def send_whole_blockchain(client, reciever = "Non Specific"):
-    with open(client_user.blockchain.file_path, 'r') as f:
-        blockchain_json = json.load(f)
-        blockchain = Blockchain(client_user.blockchain.name)
-        blockchain.load_blockchain()
-        client.send(make_json(blockchain_json, action = "SEND_BC", sender = client_user.username, reciever=reciever).encode())
-        debug_log("Blockchain data sent to client: ")
-        print(blockchain)
-
+def sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = False, process = False):
+    debug_log("INSIDE SYNC_BC FUNCTION")
+    #process is false when we are just broadcasting that we want the blockchain
+    #process is true when we get the blockchain data also and now we will process it
+    if recv:
+        #just asking for the blockchain, dont want any data to save yet, for that we will call this function with process = True.
+        pass
+    if recv and process:
+        debug_log("INSIDE SYNC_BC FUNCTION [RECV]")
+        print("Received blockchain from:", data.get("lgt_c_name", KeyError("No sender found in data")))
+        print(colored(data, 'green'))
+        received_blockchain = Blockchain(data["bc_name"])
+        if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+            if received_blockchain.verify_blockchain():
+                print("Blockchain verification successful")
+                # consensus algorithm:
+                if len(received_blockchain.chain) > len(client_user.blockchain.chain):
+                    client_user.blockchain = received_blockchain
+                    print("Blockchain updated with longer chain from server")
+                received_blockchain.save_blockchain()
+                print("Blockchain saved successfully")
+            else:
+                print("Error occurred while verifying blockchain")
+                raise Exception("Blockchain verification failed")
+        else:
+            print("Failed to synchronize and load blockchain")
+            raise Exception("Failed to synchronize and load blockchain")
+    if send:
+        debug_log("INSIDE SYNC_BC FUNCTION [SEND]")
+        with open(client_user.blockchain.file_path, 'r') as f:
+            blockchain_json = json.load(f)
+            blockchain = Blockchain(client_user.blockchain.name)
+            blockchain.load_blockchain()
+            print(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
+            client.send(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
+            debug_log("Blockchain data sent to client: ")
+            # print(blockchain)
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
     try:

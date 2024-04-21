@@ -1,0 +1,5 @@
+improvements:
+
+wish that blockchain syncing could be done in one place, with a one giant function or a seperate file
+
+wish that that client and server action logic could just be made into a function with all broadcast or a specific reciever broadcast

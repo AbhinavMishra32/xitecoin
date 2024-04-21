@@ -23,7 +23,7 @@ longest then take their chain and download it to our local copy
 
 after 21 april:
 the client is now able to determine if its blockchain is latest or not, now use send_whole_blockchain and SEND_BC action to sync the blockchains
-
+- being worked from 21 april 2024
 
 
 
