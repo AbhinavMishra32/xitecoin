@@ -24,24 +24,29 @@ def broadcast(message):
         for client_socket in clients:
             client_socket.send(message)
             print(colored(f"Message sent to {nicknames[client_socket]}", 'green'))
-            return message.decode()
+        return message.decode()
     except Exception as e:
         print(f"Error occurred while broadcasting: {e}")
         
 
 def handle(client: socket.socket):
+    buffer = ""
     while True:
         try:
             data = client.recv(2024).decode()
-            # print(data)
-            if not data.strip():
-                break
-            data_recvd = json.loads(data)
-            handle_choice(client, data_recvd)
-            # sent_data = json.dumps(data_recvd)
-            # broadcast(data_recvd.encode())
-        # except json.JSONDecodeError as e:
-        #     print(colored(f"Error occurred while decoding json: {e}", 'red', attrs=['bold']))
+            buffer += data
+            while True:
+                try:
+                    # Try to decode a JSON object from the start of the buffer
+                    data_recvd, index = json.JSONDecoder().raw_decode(buffer)
+                    handle_choice(client, data_recvd)
+                    # Remove the processed JSON object from the buffer
+                    buffer = buffer[index:].lstrip()
+                except ValueError:
+                    # No more complete JSON objects in the buffer
+                    break
+        except json.JSONDecodeError as e:
+            print(colored(f"Error occurred while decoding json: {e}", 'red', attrs=['bold']))
         except Exception as e:
             print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
             print(data)
@@ -133,8 +138,7 @@ def handle_choice(client: socket.socket, data):
         
         if data["action"] == "GIVE_BC":
             print("broadcasting the json")
-            
-            # broadcast(json.dumps(data).encode())
+            broadcast(json.dumps(data).encode())
 
         if data["action"] not in actions:
             print(colored("No valid action specified, so here is the original json:", 'light_red'))

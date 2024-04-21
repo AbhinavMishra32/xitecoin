@@ -110,6 +110,13 @@ def cl_handle_json(client, data: dict):
             #now we will send bc with GIVE_BC action
             # client.send(json.dumps({"action": "SEND_BC", "sender": client_user.username, "reciever": data["reciever"]}).encode())
 
+        if action == "GIVE_BC" and data["reciever"] == client_user.username:
+            print("Received latest blockchain from server")
+            debug_log("LATEST BLOCKCHAIN: ")
+            debug_log(colored(data, 'light_cyan'))
+            debug_log("Now starting sync_bc function with recv = True and process = True")
+            sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
+
         # if action == "GET_BC":
         #     debug_log("INSIDE GET_BC ACTION")
         #     # if data.get("reciever") == client_user.username:
@@ -147,6 +154,7 @@ def cl_handle_json(client, data: dict):
             #     print("Failed to synchronize and load blockchain")
             #     raise Exception("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
+            check_bc_len(client_user.blockchain)
             # print("In BC_TRANSACTION_DATA action")
             block = make_node_block(data, client_user, data["data"]["prev_hash"], hash = data['data']['hash'])
             # client_user.blockchain.update_merkel_root()
@@ -175,16 +183,18 @@ def cl_handle_json(client, data: dict):
                         if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
                             debug_log("Incoming chain length is greater than the local blockchain's length.")
                             # synchronize_blockchain(client_user, data["sender"])
-                            sync_bc(client, client_user.name)
+                            # sync_bc(client, client_user.name)
 
                         if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
                             debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
                             # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
                             # synchronize_blockchain(client_user, data["data"]["chain"])
                             # synchronize_blockchain(client_user, data["sender"])
-                            sync_bc(client, client_user.name)
+                            # sync_bc(client, client_user.name)
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
+                        #ADD LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
+                        
                         # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
                         # client_user.blockchain.save_blockchain()
                         pass
@@ -221,24 +231,28 @@ def sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = 
         debug_log("INSIDE SYNC_BC FUNCTION [RECV]")
         print("Received blockchain from:", data.get("lgt_c_name", KeyError("No sender found in data")))
         print(colored(data, 'green'))
+        data["bc_name"] = client_user.blockchain.name
         received_blockchain = Blockchain(data["bc_name"])
-        if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
+        if load_blockchain_from_data(received_blockchain, data["data"]):
             if received_blockchain.verify_blockchain():
                 print("Blockchain verification successful")
                 # consensus algorithm:
                 if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                    client_user.blockchain = received_blockchain
                     print("Blockchain updated with longer chain from server")
-                received_blockchain.save_blockchain()
-                print("Blockchain saved successfully")
-            else:
-                print("Error occurred while verifying blockchain")
-                raise Exception("Blockchain verification failed")
+                    client_user.blockchain = received_blockchain
+                    debug_log("now printing the loaded blockchain:")
+                    client_user.blockchain.load_blockchain()
+                    client_user.blockchain.save_blockchain()
+                    print(client_user.blockchain)
+                    print("Blockchain saved successfully")
+                else:
+                    print("Error occurred while verifying blockchain")
+                    raise Exception("Blockchain verification failed")
         else:
             print("Failed to synchronize and load blockchain")
             raise Exception("Failed to synchronize and load blockchain")
     if send:
-        debug_log("INSIDE SYNC_BC FUNCTION [SEND]")
+        # debug_log("INSIDE SYNC_BC FUNCTION [SEND]")
         with open(client_user.blockchain.file_path, 'r') as f:
             blockchain_json = json.load(f)
             blockchain = Blockchain(client_user.blockchain.name)
@@ -247,6 +261,7 @@ def sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = 
             client.send(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
             debug_log("Blockchain data sent to client: ")
             # print(blockchain)
+
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
     try:
@@ -267,13 +282,10 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             sender = User(block['data']['sender_name'], blockchain)
             recipient = User(block['data']['recipient_name'], blockchain)
             data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-            new_block = Block(data, int(block['data']['data']['nonce']), hash = block['data']['hash'])
-            # new_block.hash = new_block.hash_block()
+            new_block = Block(data, int(block['nonce']), hash = block['hash'])  # Corrected here
             blockchain.chain.append(new_block)
         blockchain.save_blockchain()
         blockchain.load_blockchain()
-            # if len(blockchain.chain) > 0:
-            #     new_block.prev_hash = blockchain.chain[-1].hash
         return True
     except Exception as e:
         print(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")
