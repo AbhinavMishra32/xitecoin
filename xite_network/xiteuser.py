@@ -65,8 +65,8 @@ class XiteUser(User):
         print("User created successfully")
         return True
     
-    def nwtransaction(self, recipient: User, amount: int, save: bool = True, return_block: bool = False, return_data: bool = False):
-        return super().transaction(recipient, amount, save, return_block=return_block, return_data=return_data)
+    def nwtransaction(self, recipient: User, amount: int, save: bool = True, return_block: bool = False, return_data: bool = False, reward: int = 0):
+        return super().transaction(recipient, amount, save, return_block=return_block, return_data=return_data, reward=reward)
     
     def user_exists(self, username) -> bool:
         # blockchain = Blockchain(self.blockchain.name)
@@ -175,6 +175,9 @@ class XiteUser(User):
                 success = True
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
+            #reward for mining:
+            user.nwtransaction(user, 0, save=True, reward = 1)
+            print("Reward for mining added to the blockchain")
 
         if use_multithreading:
             # Start a new thread that will mine and process the block

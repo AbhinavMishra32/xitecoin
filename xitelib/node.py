@@ -48,13 +48,16 @@ class Data:
     def __str__(self):
         return self.message
 class Block:
-    def __init__(self, data: Data, nonce: int = 0, prev_hash = None, hash = None):
+    def __init__(self, data: Data, nonce: int = 0, prev_hash = None, hash = None, timestamp = None):
         self.merkel_root = ""
         if prev_hash is None:
             self.prev_hash = ""
         else:
             self.prev_hash = prev_hash
-        self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
+        if timestamp is None:
+            self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
+        else:
+            self.timestamp = timestamp
         self.data = data
         self.nonce = nonce
         if hash is None:
@@ -179,8 +182,9 @@ class Blockchain:
                     sender = User(block['data']['sender_name'], self)
                     recipient = User(block['data']['recipient_name'], self)
                     data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
+                    timestamp = block['timestamp']
                     # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
-                    new_block = Block(data, block['nonce'])
+                    new_block = Block(data, block['nonce'], timestamp = timestamp)
                     new_block.hash = new_block.hash_block()
                     if len(self.chain) > 0:
                         new_block.prev_hash = self.chain[-1].hash
@@ -198,9 +202,9 @@ class Blockchain:
         else:
             print(f"Blockchain is either empty or failed to load from {self.file_path}")
             for i in range(3):
-                for j in range(0, 4):
+                for j in range(0, 7):
                     print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
-                    time.sleep(0.14)
+                    time.sleep(0.25)
                 print(" "*60, end="\r")
             print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
@@ -310,7 +314,33 @@ class Blockchain:
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
-
+    
+    # def save_blockchain(self):
+    #     print(f"Saving blockchain to: {self.file_path}")  # Add this line
+    #     try:
+    #         blockchain_data = []
+    #         for block in self.chain:
+    #             block_data = {
+    #                 'prev_hash': block.prev_hash,
+    #                 'hash': block.hash,
+    #                 'data': {
+    #                     'sender_name': block.data.sender.name,
+    #                     'recipient_name': block.data.recipient.name,
+    #                     'amount': block.data.amount,
+    #                     'message': block.data.message
+    #                 },
+    #                 'nonce': block.nonce
+    #             }
+    #             blockchain_data.append(block_data)
+    #         print(f"Data to be written to file: {blockchain_data}")
+    #         abs_file_path = os.path.abspath(self.file_path)
+    #         with open(abs_file_path, 'w') as f:
+    #             json.dump(blockchain_data, f)
+    #         print(f"Data written to file: {abs_file_path}")
+    #     except IOError as e:
+    #         print(f"IOError: Failed to save blockchain: {e}")
+    #     except Exception as e:
+    #         print(f"Unexpected error: Failed to save blockchain: {e}")
 class User:
     def __init__(self, name: str, blockchain: "Blockchain"):
         self.name = name
@@ -337,10 +367,25 @@ class User:
     # def to_dict(self) ->list:
     #     return [block.to_dict() for block in self.chain]
 
-    def transaction(self, recipient: "User", amount: int, save = True, return_block = False, return_data = False) -> Data | dict | None:
+    def transaction(self, recipient: "User", amount: int, save = True, return_block = False, return_data = False, reward: int =0) -> Data | dict | None:
         """
         Returns Data and also adds new Block to the Blockchain automatically.
         """
+        if reward > 0:
+            self.amount += reward
+            self.message = f"{self.name} mined a block and got {reward} $XITE"
+            transaction_data = Data(self, recipient, amount, self.message)
+            new_block = Block(transaction_data)
+            if save:
+                if self.blockchain.verify_block_signature(new_block):
+                    self.blockchain.add_block(new_block)
+                    print("Transaction was verified! ")
+                else: 
+                    print("Transaction was not able to be verified!")
+            if return_data:
+                return transaction_data
+            if return_block:
+                return new_block.to_dict()
         if self.amount < amount:
             print("Insufficient balance")
             raise InvalidTransactionException(f"Insufficient balance for {self.name}")
