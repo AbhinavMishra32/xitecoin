@@ -4,6 +4,7 @@ import sqlite3
 import json
 from termcolor import colored
 import threading
+from util.debug import debug_log
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
 class BlockMiningFailedException(Exception):
@@ -157,9 +158,17 @@ class XiteUser(User):
             return True
 
     @staticmethod
-    def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False) -> bool:
+    def process_mined_block(un_mined_block: dict, user: 'XiteUser', use_multithreading: bool = False, client_user = None) -> bool:
         """Process a mined block."""
         success = False
+
+        # if un_mined_block['data']['data']['sender_name'] == "XiteNetwork":
+        #     debug_log("Block mined by XiteNetwork as its a reward block")
+        #     success = True
+        #     return success
+
+        # we will directly increase the user balance with the reward, now to update user's balance we would need to take into account the trasaction mining fees/rewards and who mined it, and track the rewards and track the user's balance with it
+        # research about how wallet or user balance was implemented in btc at the beginning
 
         def mine_and_process_block(json_data: dict):
             nonlocal success
@@ -170,9 +179,16 @@ class XiteUser(User):
                 mined_block = XiteUser.mine_block(un_mined_block, user)
                 print(colored(f"Block {mined_block} mined successfully", 'light_green'))
                 print("--------------------")
-                XiteUser.verify_blockchain(user)
-                XiteUser.save_block(user, mined_block)
-                success = True
+                # verify just the block and not the whole blockchain for each transaction, but will add whole blockchain verification in the future
+                debug_log("Block nonce: " , str(mined_block.nonce))
+                if client_user.blockchain.verify_PoW_singlePass(mined_block):
+                    print(colored("Incoming Block verified successfully", 'green'))
+                    XiteUser.save_block(user, mined_block)
+
+                    success = True
+                else:
+                    raise BlockVerifyError("Incoming Block verification failed")
+                # XiteUser.verify_blockchain(user)
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
             #reward for mining:
@@ -188,6 +204,8 @@ class XiteUser(User):
 
         return success
 
+def give_reward(user: XiteUser, amount: int):
+    user.nwtransaction(user, amount, save=True, reward=amount)
 
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
@@ -273,6 +291,9 @@ def print_database():
         print(row)
 
     conn.close()
+
+class BlockVerifyError(Exception):
+    pass
 
 
 if __name__ == "__main__":

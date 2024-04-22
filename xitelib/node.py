@@ -23,13 +23,13 @@ from datetime import datetime
 import hashlib
 import json
 import rsa
-from settings.settings import Settings
+# from settings.settings import Settings
 import time
 import os
 
 
-DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
-# DIFFICULITY = 4
+# DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
+DIFFICULITY = 4
 HASH_WITHOUT_TIMESTAMP = True #for static hashing [same hash of a block everytime with the same variables, but time isnt a variable when this is enabled], wont change with different time (used for testing hashes of the blockchain comparing other changing factors than just time)
 BLOCK_REWARD = 2.5
 
@@ -367,9 +367,24 @@ class User:
     # def to_dict(self) ->list:
     #     return [block.to_dict() for block in self.chain]
 
-    def transaction(self, recipient: "User", amount: int, save = True, return_block = False, return_data = False, reward: int =0) -> Data | dict | None:
+    def transaction(self, recipient: "User", amount: int, save=True, return_block=False, return_data=False, reward: int = 0) -> Data | dict | None:
         """
-        Returns Data and also adds new Block to the Blockchain automatically.
+        Executes a transaction between two users.
+
+        Args:
+            recipient (User): The recipient of the transaction.
+            amount (int): The amount of XITE to be transferred.
+            save (bool, optional): Whether to save the transaction to the blockchain. Defaults to True.
+            return_block (bool, optional): Whether to return the new block as a dictionary. Defaults to False.
+            return_data (bool, optional): Whether to return the transaction data. Defaults to False.
+            reward (int, optional): The reward amount for mining a block. Defaults to 0.
+
+        Returns:
+            Data or dict or None: The transaction data or the new block as a dictionary, depending on the specified return type.
+
+        Raises:
+            InvalidTransactionException: If the sender has insufficient balance.
+
         """
         if reward > 0:
             self.amount += reward
@@ -380,7 +395,7 @@ class User:
                 if self.blockchain.verify_block_signature(new_block):
                     self.blockchain.add_block(new_block)
                     print("Transaction was verified! ")
-                else: 
+                else:
                     print("Transaction was not able to be verified!")
             if return_data:
                 return transaction_data
@@ -392,15 +407,16 @@ class User:
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
-        self.message = f"{self.name} gave {recipient.name} {amount} $XITE" #this message has to be signed
+        self.message = f"{self.name} gave {recipient.name} {amount} $XITE"  # this message has to be signed
         transaction_data = Data(self, recipient, amount, self.message)
         # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
+
         new_block = Block(transaction_data) #* gives current transaction data's hash to the current block but add_block() method automatically gives the hash of the current block to the next block. (or current block has previous block's hash)
         if save:
             if self.blockchain.verify_block_signature(new_block):
                 self.blockchain.add_block(new_block)
                 print("Transaction was verified! ")
-            else: 
+            else:
                 print("Transaction was not able to be verified!")
         if return_data:
             return transaction_data

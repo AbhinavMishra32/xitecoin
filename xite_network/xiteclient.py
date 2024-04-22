@@ -156,7 +156,8 @@ def cl_handle_json(client, data: dict):
         elif action == "BC_TRANSACTION_DATA":
             check_bc_len(client_user.blockchain)
             # print("In BC_TRANSACTION_DATA action")
-            block = make_node_block(data, client_user, data["data"]["prev_hash"], hash = data['data']['hash'])
+            print('PREVIOUS HASH ::::::::::::::::::', data['prev_hash'])
+            block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
             # client_user.blockchain.update_merkel_root()
             # block.hash = block.hash_block()
             print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
@@ -192,7 +193,7 @@ def cl_handle_json(client, data: dict):
                             # synchronize_blockchain(client_user, data["sender"])
                             # sync_bc(client, client_user.name)
                     print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
-                    if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
+                    if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
                         #ADD LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
                         
                         # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
@@ -281,8 +282,8 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
         for block in blockchain_data:
             sender = User(block['data']['sender_name'], blockchain)
             recipient = User(block['data']['recipient_name'], blockchain)
-            data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
-            new_block = Block(data, int(block['nonce']), hash = block['hash'])  # Corrected here
+            data = Data(sender, recipient, block['data']['amount'], block['data']['message'], block['timestamp']) # Corrected here
+            new_block = Block(data, int(block['nonce']), hash = block['hash'], prev_hash = block['prev_hash'], timestamp = block['timestamp'])  
             blockchain.chain.append(new_block)
         blockchain.save_blockchain()
         blockchain.load_blockchain()
@@ -297,6 +298,7 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
     chain_length = len(t.chain)
     if chain_length > 0:
         prev_hash = t.chain[-1].hash
+        debug_log(f"Previous hash: {prev_hash}")
         send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
         send_data = json.loads(send_data)  # Convert send_data to a dictionary
         send_data["data"]["data"]["chain_length"] = chain_length

@@ -16,6 +16,35 @@ inside XiteUser.process_mined_block()  :-
 we are making a new default argument named 'reward' which is being added in nwtransaction and transcation method, which is now causing new errors while mining, fix it 
 
 
+22 APRIL 2024:
+
+TODO 22 april 2024:
+1. make a way to sync the blockchain without seeing the largest chain, will be used for errors in local blockchain if we need to sync it. 
+2. before making a new transaction make sure that the latest block in local blockchain, if its data's hash is the same as the hash written in the block.
+
+Questions to ask chatgpt:
+1. if we mine a block, so is the reward given to the user by the server? if yes then is it its own transaction?, is it its own block?, how do we let people know that i got the reward after mining
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 sphinx error april 17 2024:
 
 PS F:\A\xitecoin\docs> .\make.bat html
