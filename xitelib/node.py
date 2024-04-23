@@ -258,7 +258,7 @@ class Blockchain:
                 self.load_blockchain()
             if len(self.chain) > 0:
                 block.prev_hash = self.chain[-1].hash
-            nonce = self.proof_of_work(block)
+            nonce = self.proof_of_work(block) #where actual "mining" happens, it finds the nonce of the block
             block.nonce = nonce
             self.update_merkel_root()
             self.chain.append(block)

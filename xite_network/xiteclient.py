@@ -23,6 +23,7 @@ except ConnectionRefusedError as e:
 nicknames = []
 TRANSACTION_BUFFER = []
 MINE = False
+REWARD = 1
 
 IS_LONGEST_CHAIN = False
 LONGEST_CHAIN_LENGTH = 0
@@ -106,7 +107,7 @@ def cl_handle_json(client, data: dict):
         if action == "WANT_BC" and data["sender"] == client_user.username:
             debug_log("INSIDE WANT_BC ACTION")
             # the person wants the blockchain, so we send it to them because sender is our username, we are sending it to the "reciever" client
-            sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
+            process_sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
             #now we will send bc with GIVE_BC action
             # client.send(json.dumps({"action": "SEND_BC", "sender": client_user.username, "reciever": data["reciever"]}).encode())
 
@@ -115,44 +116,8 @@ def cl_handle_json(client, data: dict):
             debug_log("LATEST BLOCKCHAIN: ")
             debug_log(colored(data, 'light_cyan'))
             debug_log("Now starting sync_bc function with recv = True and process = True")
-            sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
+            process_sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
 
-        # if action == "GET_BC":
-        #     debug_log("INSIDE GET_BC ACTION")
-        #     # if data.get("reciever") == client_user.username:
-        #     #     sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GET_BC action")), recv = True)
-
-        #     if data.get("sender") == client_user.username:
-        #         sync_bc(client, data, reciever = data.get("reciever", KeyError("No reciever found in GET_BC action")), send = True)
-
-        #     if data.get("reciever") == client_user.username:
-        #         sync_bc(client, str(data.get("sender")))
-        elif action == "SYNC_BC": #* someone asked by sending "SYNC_BC" action, now we have to send our blockchain
-            if data.get("sender") == client_user.username:
-                print("Received request to send blockchain")
-                # sync_bc(client, )
-
-
-
-            # print("Received latest blockchain from server")
-            # debug_log("LATEST BLOCKCHAIN: ") # debug
-            # debug_log(colored(data, 'light_cyan')) # debug
-            # received_blockchain = Blockchain(data["bc_name"])
-            # if load_blockchain_from_data(received_blockchain, data["data"]["chain"]):
-            #     if received_blockchain.verify_blockchain():
-            #         print("Blockchain verification successful")
-            #         # consensus algorithm:
-            #         if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-            #             client_user.blockchain = received_blockchain
-            #             print("Blockchain updated with longer chain from server")
-            #         received_blockchain.save_blockchain()
-            #         print("Blockchain saved successfully")
-            #     else:
-            #         print("Error occurred while verifying blockchain")
-            #         raise Exception("Blockchain verification failed")
-            # else:
-            #     print("Failed to synchronize and load blockchain")
-            #     raise Exception("Failed to synchronize and load blockchain")
         elif action == "BC_TRANSACTION_DATA":
             check_bc_len(client_user.blockchain)
             # print("In BC_TRANSACTION_DATA action")
@@ -162,46 +127,76 @@ def cl_handle_json(client, data: dict):
             # block.hash = block.hash_block()
             print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
             print(colored(f"Block hash: {block.hash}", 'yellow'))
-            if MINE:
-                # if not block.is_mined(): # block isnt mined yet
-                if data["data"]["nonce"] == 0:
-                    print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
-                    add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-                    print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
-                    i = 0
-                    for transaction in TRANSACTION_BUFFER:
-                        i += 1
-                        print("----Transaction Data----")
-                        print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
-                        # print(json.dumps(transaction, indent=4))
-                        print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
-                        print_transaction_data(transaction)
-                        print("--------------------")
-                    print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
-                    #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
-                    client_user.blockchain.load_blockchain()
-                    if len(client_user.blockchain.chain) > 0:
-                        if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
-                            debug_log("Incoming chain length is greater than the local blockchain's length.")
-                            # synchronize_blockchain(client_user, data["sender"])
-                            # sync_bc(client, client_user.name)
+            if data["sender"] == client_user.username:
+                return
+                #ignore the block and dont mine:
+                print(colored("Block sender is client user, ignoring block", 'yellow'))
+                block = make_node_block(data, client_user)
+                client_user.blockchain.add_block(block)
+                client_user.blockchain.save_blockchain()
+                debug_log("Block added to blockchain without mining as it already has a nonce")
+                debug_log("Now syncing bc as latest transaction was from client user")
+                sync_bc()
 
-                        if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
-                            debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
-                            # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
-                            # synchronize_blockchain(client_user, data["data"]["chain"])
-                            # synchronize_blockchain(client_user, data["sender"])
-                            # sync_bc(client, client_user.name)
-                    print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
-                    if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
-                        #ADD LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
-                        
-                        # TRANSACTION_BUFFER.pop(TRANSACTION_BUFFER.index(data))
-                        # client_user.blockchain.save_blockchain()
-                        pass
-                # else:
-                #     #checking if block is correct or not:
-                #     XiteUser.process_mined_block(block, client_user, use_multithreading=False)
+            else:
+                if MINE:
+                    # if not block.is_mined(): # block isnt mined yet
+                    if data["data"]["nonce"] == 0:
+                        print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
+                        add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+                        print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                        i = 0
+                        for transaction in TRANSACTION_BUFFER:
+                            i += 1
+                            print("----Transaction Data----")
+                            print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
+                            # print(json.dumps(transaction, indent=4))
+                            print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
+                            print_transaction_data(transaction)
+                            print("--------------------")
+                        print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+                        #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
+                        client_user.blockchain.load_blockchain()
+                        if len(client_user.blockchain.chain) > 0:
+                            if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
+                                debug_log("Incoming chain length is greater than the local blockchain's length.")
+                                # synchronize_blockchain(client_user, data["sender"])
+                                # sync_bc(client, client_user.name)
+
+                            if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
+                                debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
+                                # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
+                                # synchronize_blockchain(client_user, data["data"]["chain"])
+                                # synchronize_blockchain(client_user, data["sender"])
+                                # sync_bc(client, client_user.name)
+                        print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
+                        if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
+                            #ADD LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
+                            t = Blockchain(client_user.blockchain.name)
+                            t.load_blockchain()
+                            chain_length = len(t.chain)
+                            prev_hash = t.chain[-1].hash
+
+                            #making the block for reward where reward is given from server, after this we will mine this block ourselfs and broadcast transaction with the nonce also
+                            reward_data = client_user.nwtransaction(client_user, REWARD, save = False, return_as_json = True)
+                            s_reward_data = make_json(data =reward_data, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+                            s_reward_data = json.loads(s_reward_data)  # Convert send_data to a dictionary
+                            # send_data["data"]["data"]["chain_length"] = chain_length
+                            # print(colored(send_data, "yellow"))
+
+                            mined_reward_block = XiteUser.mine_block(s_reward_data, client_user)
+                            mined_reward_data = make_json(mined_reward_block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+                            mined_reward_data = json.loads(mined_reward_data)  # Convert send_data to a dictionary
+                            mined_reward_data["data"]["data"]["chain_length"] = chain_length
+                            debug_log("Mined reward data: ",mined_reward_data)
+                            if mined_reward_data["data"]["nonce"] != 0:
+                                raise Exception("Block not mined yet")
+                            client.send(json.dumps(s_reward_data).encode())
+                            print(colored("Sent reward transaction data", 'green'))
+                    else:
+                        # block is already mined
+                        print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
+                        print(colored(data["data"], attrs=['bold'], color='green'))
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
@@ -221,7 +216,7 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     # json_data["data"].update(kwargs)
     return json.dumps(json_data)
         
-def sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = False, process = False):
+def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = False, process = False):
     debug_log("INSIDE SYNC_BC FUNCTION")
     #process is false when we are just broadcasting that we want the blockchain
     #process is true when we get the blockchain data also and now we will process it
@@ -266,7 +261,7 @@ def sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = 
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
     try:
-        return client_user.nwtransaction(recp_user, amount, save = False, return_block = True)
+        return client_user.nwtransaction(recp_user, amount, save = False, return_as_json = True)
     except InvalidTransactionException as e:
         print(colored(f"Error occurred while making transaction: {e}", 'red'))
         return None
@@ -319,8 +314,9 @@ def req_bc_update(rec_name: str):
 
 
 
-# def bc_update(sen = False, data):
-#     pass
+def sync_bc():
+    # actual function with sync logic in process_sync_bc
+    client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
 
 def chain_len_status():
     if IS_LONGEST_CHAIN:

@@ -66,8 +66,8 @@ class XiteUser(User):
         print("User created successfully")
         return True
     
-    def nwtransaction(self, recipient: User, amount: int, save: bool = True, return_block: bool = False, return_data: bool = False, reward: int = 0):
-        return super().transaction(recipient, amount, save, return_block=return_block, return_data=return_data, reward=reward)
+    def nwtransaction(self, recipient: User, amount: int, save: bool = True, return_as_json: bool = False, return_data: bool = False):
+        return super().transaction(recipient, amount, save, return_block=return_as_json, return_data=return_data)
     
     def user_exists(self, username) -> bool:
         # blockchain = Blockchain(self.blockchain.name)
@@ -181,7 +181,7 @@ class XiteUser(User):
                 print("--------------------")
                 # verify just the block and not the whole blockchain for each transaction, but will add whole blockchain verification in the future
                 debug_log("Block nonce: " , str(mined_block.nonce))
-                if client_user.blockchain.verify_PoW_singlePass(mined_block):
+                if client_user.blockchain.verify_PoW_singlePass(mined_block): #type: ignore
                     print(colored("Incoming Block verified successfully", 'green'))
                     XiteUser.save_block(user, mined_block)
 
@@ -192,8 +192,8 @@ class XiteUser(User):
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
             #reward for mining:
-            user.nwtransaction(user, 0, save=True, reward = 1)
-            print("Reward for mining added to the blockchain")
+            # user.nwtransaction(user, 0, save=True, reward = 1)
+            # print("Reward for mining added to the blockchain")
 
         if use_multithreading:
             # Start a new thread that will mine and process the block
@@ -203,9 +203,6 @@ class XiteUser(User):
             mine_and_process_block(un_mined_block)
 
         return success
-
-def give_reward(user: XiteUser, amount: int):
-    user.nwtransaction(user, amount, save=True, reward=amount)
 
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())

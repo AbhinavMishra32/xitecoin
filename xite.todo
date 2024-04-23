@@ -26,6 +26,40 @@ Questions to ask chatgpt:
 1. if we mine a block, so is the reward given to the user by the server? if yes then is it its own transaction?, is it its own block?, how do we let people know that i got the reward after mining
 
 
+24 april 2024:
+getting this error with reward mining currently as its giving error that Abhinav1 doesnt have the reward amount to even give so thats y giving error:
+Insufficient balance
+Error occurred while handling json: Insufficient balance for Abhinav1
+TRACEBACK OF CL_HANDLE_JSON:
+Traceback (most recent call last):
+  File "F:\A\xitecoin\xite_network\xiteclient.py", line 181, in cl_handle_json
+    reward_data = client_user.nwtransaction(client_user, REWARD, save = False, return_as_json = True)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\A\xitecoin\xite_network\xiteuser.py", line 70, in nwtransaction
+    return super().transaction(recipient, amount, save, return_block=return_as_json, return_data=return_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\A\xitecoin\xitelib\node.py", line 406, in transaction
+    raise InvalidTransactionException(f"Insufficient balance for {self.name}")
+xitelib.node.InvalidTransactionException: Insufficient balance for Abhinav1
+{
+    "action": "BC_TRANSACTION_DATA",
+    "sender": "Abhinav2",
+    "data": {
+        "prev_hash": "",
+        "hash": "d60d2b96a8f96edbb6bb13c1a1e1a81639b5f6568ebe1bec6e6364a990a63ca0",
+        "data": {
+            "sender_name": "Abhinav2",
+            "recipient_name": "dfgfdg",
+            "amount": 0,
+            "message": "Abhinav2 gave dfgfdg 0 $XITE",
+            "chain_length": 47
+        },
+        "timestamp": "23/04/2024 20:52:07",
+        "nonce": 0
+    },
+    "bc_name": "xc_Abhinav2",
+    "prev_hash": "33a4eb76160c1fb3ed6a1bd2e9ab38859efb7bcd36d887a93530b0bddddb3d2e"
+}
 
 
 
