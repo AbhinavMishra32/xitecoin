@@ -1,28 +1,73 @@
-TODO: in line 112 in xiteclient.py [fix the syncing of blockchain]
-
-TODO: make syncing blockchain when sending a transaction and not mining it, recieve the latest blockchain.
-
------------latest------------
-after 6/2/24::::
-Whats hpappening: Currently when we recieve a transaction from someone who's chain length is greater than ours we send a "SYNC_BC" action
-which then is broadcasted to everyone (including us which we have to fix by recieving actions by name or just the "SYNC_BC" with the name), and because of this 
-we are saying to ourselfs also that we need our latest blockchain to ourself. but we need to ask the guy who's chain length is longer than use to send his chain.
-in the SYNC_BC action we need to send our "latest" blockchain to the guy that asked for it.
+from 22 april:
+the blockchains are syncing (but not correctly) some transactions are getting cut if not timed correctly with the check_bc_len() function 
+its computing prev_hash after we get the largest bc, but we want to see if what prev_hash we are getting actually matches the prev_has of the previous block by PoW_singlePass function,  apply the verify function before making the prev_hash ourselfs!! 
+STOP COMPUTING PREV_HASH OURSELFS!!! THIS SLOWWS DOWN BLOCKCHAIN DOWNLOADING AND CAUSES MORE RESOURCES!
 
 
 
+Actual money logic:
+make a limited amount of coins, if we exchange real money with those coins, they will still be limited, and if we mine then it will be mined from the total amount of coins.
+ppl who mine will get some percentage of the transaction (transaction fees)
 
-march 2024:
+solving this:
+error in line 195 in xiteclient with this code:if XiteUser.process_mined_block(data, client_user, use_multithreading=False):
 
-the receiver should just do single verify of hash of recieving transaction instead of mining it, if it passes then add to local blockchain, if dont then reject
+inside XiteUser.process_mined_block()  :-
+we are making a new default argument named 'reward' which is being added in nwtransaction and transcation method, which is now causing new errors while mining, fix it 
 
 
-add initial syncing
-if local blockchain isnt latest (lesser blocks than other people) then request random n no. of people, to give their chain length, then compare those chain length to see whose' is
-longest then take their chain and download it to our local copy
+22 APRIL 2024:
 
-after 21 april:
-the client is now able to determine if its blockchain is latest or not, now use send_whole_blockchain and SEND_BC action to sync the blockchains
+TODO 22 april 2024:
+1. make a way to sync the blockchain without seeing the largest chain, will be used for errors in local blockchain if we need to sync it. 
+2. before making a new transaction make sure that the latest block in local blockchain, if its data's hash is the same as the hash written in the block.
+
+Questions to ask chatgpt:
+1. if we mine a block, so is the reward given to the user by the server? if yes then is it its own transaction?, is it its own block?, how do we let people know that i got the reward after mining
+
+
+24 april 2024:
+getting this error with reward mining currently as its giving error that Abhinav1 doesnt have the reward amount to even give so thats y giving error:
+Insufficient balance
+Error occurred while handling json: Insufficient balance for Abhinav1
+TRACEBACK OF CL_HANDLE_JSON:
+Traceback (most recent call last):
+  File "F:\A\xitecoin\xite_network\xiteclient.py", line 181, in cl_handle_json
+    reward_data = client_user.nwtransaction(client_user, REWARD, save = False, return_as_json = True)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\A\xitecoin\xite_network\xiteuser.py", line 70, in nwtransaction
+    return super().transaction(recipient, amount, save, return_block=return_as_json, return_data=return_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "F:\A\xitecoin\xitelib\node.py", line 406, in transaction
+    raise InvalidTransactionException(f"Insufficient balance for {self.name}")
+xitelib.node.InvalidTransactionException: Insufficient balance for Abhinav1
+{
+    "action": "BC_TRANSACTION_DATA",
+    "sender": "Abhinav2",
+    "data": {
+        "prev_hash": "",
+        "hash": "d60d2b96a8f96edbb6bb13c1a1e1a81639b5f6568ebe1bec6e6364a990a63ca0",
+        "data": {
+            "sender_name": "Abhinav2",
+            "recipient_name": "dfgfdg",
+            "amount": 0,
+            "message": "Abhinav2 gave dfgfdg 0 $XITE",
+            "chain_length": 47
+        },
+        "timestamp": "23/04/2024 20:52:07",
+        "nonce": 0
+    },
+    "bc_name": "xc_Abhinav2",
+    "prev_hash": "33a4eb76160c1fb3ed6a1bd2e9ab38859efb7bcd36d887a93530b0bddddb3d2e"
+}
+
+
+
+
+
+
+
+
 
 
 
