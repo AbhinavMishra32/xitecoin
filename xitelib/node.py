@@ -367,7 +367,7 @@ class User:
     # def to_dict(self) ->list:
     #     return [block.to_dict() for block in self.chain]
 
-    def transaction(self, recipient: "User", amount: int, save=True, return_block=False, return_data=False, reward: int = 0) -> Data | dict | None:
+    def transaction(self, recipient: "User", amount: int, save=True, return_block=False, return_data=False, reward: int = 0, check_balance: bool = True) -> Data | dict | None:
         """
         Executes a transaction between two users.
 
@@ -401,9 +401,11 @@ class User:
                 return transaction_data
             if return_block:
                 return new_block.to_dict()
-        if self.amount < amount:
-            print("Insufficient balance")
-            raise InvalidTransactionException(f"Insufficient balance for {self.name}")
+        if check_balance:
+            if self.amount < amount:
+                print("Insufficient balance")
+                raise InvalidTransactionException(f"Insufficient balance for {self.name}")
+
         recipient.amount += amount
         self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")

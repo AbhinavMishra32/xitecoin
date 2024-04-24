@@ -120,15 +120,10 @@ def cl_handle_json(client, data: dict):
 
         elif action == "BC_TRANSACTION_DATA":
             check_bc_len(client_user.blockchain)
-            # print("In BC_TRANSACTION_DATA action")
-            print('PREVIOUS HASH ::::::::::::::::::', data['prev_hash'])
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
-            # client_user.blockchain.update_merkel_root()
-            # block.hash = block.hash_block()
             print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
             print(colored(f"Block hash: {block.hash}", 'yellow'))
-            if data["sender"] == client_user.username:
-                return
+            if data["sender"] == client_user.username or data["sender"] == "XiteNetwork":
                 #ignore the block and dont mine:
                 print(colored("Block sender is client user, ignoring block", 'yellow'))
                 block = make_node_block(data, client_user)
@@ -137,6 +132,14 @@ def cl_handle_json(client, data: dict):
                 debug_log("Block added to blockchain without mining as it already has a nonce")
                 debug_log("Now syncing bc as latest transaction was from client user")
                 sync_bc()
+            if data["data"]["data"]["sender_name"] == "XiteNetwork":
+                print(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
+                block = make_node_block(data, client_user)
+                client_user.blockchain.add_block(block)
+                client_user.blockchain.save_blockchain()
+                debug_log("Block added to blockchain without mining as it already has a nonce")
+                debug_log("Now syncing bc as latest transaction was from XiteNetwork")
+                # sync_bc()
 
             else:
                 if MINE:
@@ -177,26 +180,35 @@ def cl_handle_json(client, data: dict):
                             chain_length = len(t.chain)
                             prev_hash = t.chain[-1].hash
 
+                            wallet = XiteUser("XiteNetwork", "pass", client_user.blockchain)
+
                             #making the block for reward where reward is given from server, after this we will mine this block ourselfs and broadcast transaction with the nonce also
-                            reward_data = client_user.nwtransaction(client_user, REWARD, save = False, return_as_json = True)
+                            reward_data = wallet.nwtransaction(client_user, REWARD, save = False, return_as_json = True, check_balance=False)
                             s_reward_data = make_json(data =reward_data, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
                             s_reward_data = json.loads(s_reward_data)  # Convert send_data to a dictionary
                             # send_data["data"]["data"]["chain_length"] = chain_length
                             # print(colored(send_data, "yellow"))
 
-                            mined_reward_block = XiteUser.mine_block(s_reward_data, client_user)
+                            mined_reward_block = XiteUser.mine_block(s_reward_data, client_user).to_dict()
                             mined_reward_data = make_json(mined_reward_block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
                             mined_reward_data = json.loads(mined_reward_data)  # Convert send_data to a dictionary
                             mined_reward_data["data"]["data"]["chain_length"] = chain_length
-                            debug_log("Mined reward data: ",mined_reward_data)
-                            if mined_reward_data["data"]["nonce"] != 0:
+        
+                            if mined_reward_data["data"]["nonce"] == 0:
                                 raise Exception("Block not mined yet")
-                            client.send(json.dumps(s_reward_data).encode())
+                            else:
+                                debug_log("Mined reward data: ",mined_reward_data)
+                            client.send(json.dumps(mined_reward_data).encode())
                             print(colored("Sent reward transaction data", 'green'))
                     else:
                         # block is already mined
                         print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
                         print(colored(data["data"], attrs=['bold'], color='green'))
+                        debug_log("Saving already mined block")
+                        block = make_node_block(data, client_user)
+                        client_user.blockchain.add_block(block)
+                        client_user.blockchain.save_blockchain()
+                        debug_log("Block added to blockchain without mining as it already has a nonce")
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
@@ -243,6 +255,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
                     print("Blockchain saved successfully")
                 else:
                     print("Error occurred while verifying blockchain")
+                    
                     raise Exception("Blockchain verification failed")
         else:
             print("Failed to synchronize and load blockchain")
@@ -345,8 +358,12 @@ def write(bc: Blockchain):
             print("Checking blockchain length before making transaction...")
             check_bc_len(bc)
             chain_len_status()
-
-            make_transaction(recipient, amount, client_user.blockchain)
+            if xc.verify_blockchain():
+                colored("Blockchain verification successful before transaction", 'green')
+                make_transaction(recipient, amount, client_user.blockchain)
+            else:
+                print("Error occurred while verifying blockchain")
+                raise Exception("Blockchain verification failed")
         except Exception:
             # print("IndexError occurred while handling json")
             print(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']))
