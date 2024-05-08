@@ -1,9 +1,6 @@
-from pickle import LONG
-from pyexpat.model import XML_CQUANT_NONE
 import socket
 import threading
 import traceback
-from util import debug
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
@@ -123,7 +120,7 @@ def cl_handle_json(client, data: dict):
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
             print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
             print(colored(f"Block hash: {block.hash}", 'yellow'))
-            if data["sender"] == client_user.username or data["sender"] == "XiteNetwork":
+            if data["sender"] == client_user.username:
                 #ignore the block and dont mine:
                 print(colored("Block sender is client user, ignoring block", 'yellow'))
                 block = make_node_block(data, client_user)
@@ -138,7 +135,7 @@ def cl_handle_json(client, data: dict):
                 client_user.blockchain.add_block(block)
                 client_user.blockchain.save_blockchain()
                 debug_log("Block added to blockchain without mining as it already has a nonce")
-                debug_log("Now syncing bc as latest transaction was from XiteNetwork")
+                # debug_log("Now syncing bc as latest transaction was from XiteNetwork")
                 # sync_bc()
 
             else:
@@ -174,7 +171,7 @@ def cl_handle_json(client, data: dict):
                                 # sync_bc(client, client_user.name)
                         print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                         if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
-                            #ADD LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
+                            # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
                             t = Blockchain(client_user.blockchain.name)
                             t.load_blockchain()
                             chain_length = len(t.chain)
@@ -237,7 +234,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
         pass
     if recv and process:
         debug_log("INSIDE SYNC_BC FUNCTION [RECV]")
-        print("Received blockchain from:", data.get("lgt_c_name", KeyError("No sender found in data")))
+        print("Received blockchain from:", data.get("sender", KeyError("No sender found in data")))
         print(colored(data, 'green'))
         data["bc_name"] = client_user.blockchain.name
         received_blockchain = Blockchain(data["bc_name"])
