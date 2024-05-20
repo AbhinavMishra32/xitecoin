@@ -140,6 +140,9 @@ def handle_choice(client: socket.socket, data):
             print("broadcasting the json")
             broadcast(json.dumps(data).encode())
 
+        if data["action"] == "MINE_STATUS":
+           pass 
+
         if data["action"] not in actions:
             print(colored("No valid action specified, so here is the original json:", 'light_red'))
             print(colored(data, 'light_red'))

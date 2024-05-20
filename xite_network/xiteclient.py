@@ -57,11 +57,6 @@ def recieve_dbug():
             print(f"Error parsing JSON: {e}")
             break
 
-        # try:
-        #     cl_handle_json(cl_data_recvd["action"])
-        # except Exception as e:
-        #     print(f"Error handling action: {e}")
-        #     break
 
 def cl_handle_json(client, data: dict):
     # print("in cl_handle_json: ")
@@ -129,7 +124,7 @@ def cl_handle_json(client, data: dict):
                 debug_log("Block added to blockchain without mining as it already has a nonce")
                 debug_log("Now syncing bc as latest transaction was from client user")
                 sync_bc()
-            if data["data"]["data"]["sender_name"] == "XiteNetwork":
+            if data["data"]["data"]["sender_name"] == "XiteNetwork" and data["data"]["data"]["recipient_name"] == client_user.username:
                 print(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
                 block = make_node_block(data, client_user)
                 client_user.blockchain.add_block(block)
@@ -177,7 +172,12 @@ def cl_handle_json(client, data: dict):
                             chain_length = len(t.chain)
                             prev_hash = t.chain[-1].hash
 
+
+                            client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
+                            return
                             wallet = XiteUser("XiteNetwork", "pass", client_user.blockchain)
+                            #after mining the user tells to the server that it mined the block (the server "gets to know this") and then the server adds reward to that user's wallet database
+
 
                             #making the block for reward where reward is given from server, after this we will mine this block ourselfs and broadcast transaction with the nonce also
                             reward_data = wallet.nwtransaction(client_user, REWARD, save = False, return_as_json = True, check_balance=False)

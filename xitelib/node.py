@@ -344,20 +344,48 @@ class Blockchain:
 class User:
     def __init__(self, name: str, blockchain: "Blockchain"):
         self.name = name
-        self.blockchain = blockchain
-        self.amount = self.get_balance()
-        self.public_key, self._private_key = rsa.newkeys(512)
+        if self.name != "Genesis":
+            self.blockchain = blockchain
+            self.public_key, self._private_key = rsa.newkeys(512)
+            self.history = []
+            
+            wallet_name = self.name + "_wallet.json"
+
+            if not os.path.exists(wallet_name):
+                self.wallet = {}
+                with open(wallet_name, 'w') as f:
+                    json.dump({"timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "amount": 0, "sender": "null", "net_amount": 0}, f)
+            else:
+                if self.name:
+                    with open(wallet_name, 'r') as f:
+                        self.wallet = json.load(f)
+
+            self.amount = self.get_balance()
 
     def __str__(self):
         return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User balance: {self.amount}"
 
+    def save_to_wallet(self, amount: int, sender: str):
+        self.amount += amount
+        self.history.append({"timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "amount": amount, "sender": sender, "net_amount": self.amount})
+        with open(self.name + "_wallet.json", 'w') as f:
+            json.dump(self.wallet, f)
+
+    def print_walllet_history(self):
+        for transaction in self.history:
+            print(f"TIMESTAMP: {transaction['timestamp']}, AMOUNT: {transaction['amount']}, SENDER: {transaction['sender']}, NET AMOUNT: {transaction['net_amount']}")
+
     def get_balance(self):
         balance = 0
+        
+        balance += self.wallet.get("net_amount", 0)
+
         for block in self.blockchain.chain: 
-            if block.data.sender.name == self.name:
+            if block.data.sender.name == self.name and block.data.recipient.name != self.name:
                 balance -= block.data.amount
-            if block.data.recipient.name == self.name:
+            if block.data.recipient.name == self.name and block.data.sender.name != self.name:
                 balance += block.data.amount
+                
         return balance
 
     def sign(self, message: str) -> bytes:

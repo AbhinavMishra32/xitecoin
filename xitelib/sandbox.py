@@ -8,7 +8,7 @@ Rinki = User("Rinki", new_blockchain)
 Raju = User("Raju", new_blockchain)
 
 Banti.transaction(Rinki, 0)
+Raju.transaction(Banti,0)
 new_blockchain.save_blockchain()
 
 print(new_blockchain)
-
