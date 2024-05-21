@@ -108,104 +108,118 @@ def cl_handle_json(client, data: dict):
             debug_log("LATEST BLOCKCHAIN: ")
             debug_log(colored(data, 'light_cyan'))
             debug_log("Now starting sync_bc function with recv = True and process = True")
-            process_sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
+            try:
+                process_sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
+            except:
+                sync_bc()
 
         elif action == "BC_TRANSACTION_DATA":
-            check_bc_len(client_user.blockchain)
+            # check_bc_len(client_user.blockchain)
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
             print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
             print(colored(f"Block hash: {block.hash}", 'yellow'))
-            if data["sender"] == client_user.username:
-                #ignore the block and dont mine:
-                print(colored("Block sender is client user, ignoring block", 'yellow'))
-                block = make_node_block(data, client_user)
-                client_user.blockchain.add_block(block)
-                client_user.blockchain.save_blockchain()
-                debug_log("Block added to blockchain without mining as it already has a nonce")
-                debug_log("Now syncing bc as latest transaction was from client user")
-                sync_bc()
-            if data["data"]["data"]["sender_name"] == "XiteNetwork" and data["data"]["data"]["recipient_name"] == client_user.username:
-                print(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
-                block = make_node_block(data, client_user)
-                client_user.blockchain.add_block(block)
-                client_user.blockchain.save_blockchain()
-                debug_log("Block added to blockchain without mining as it already has a nonce")
-                # debug_log("Now syncing bc as latest transaction was from XiteNetwork")
-                # sync_bc()
-
-            else:
-                if MINE:
-                    # if not block.is_mined(): # block isnt mined yet
-                    if data["data"]["nonce"] == 0:
-                        print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
-                        add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-                        print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
-                        i = 0
-                        for transaction in TRANSACTION_BUFFER:
-                            i += 1
-                            print("----Transaction Data----")
-                            print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
-                            # print(json.dumps(transaction, indent=4))
-                            print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
-                            print_transaction_data(transaction)
-                            print("--------------------")
-                        print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
-                        #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
-                        client_user.blockchain.load_blockchain()
-                        if len(client_user.blockchain.chain) > 0:
-                            if data["data"]["data"]["chain_length"] > len(client_user.blockchain.chain):
-                                debug_log("Incoming chain length is greater than the local blockchain's length.")
-                                # synchronize_blockchain(client_user, data["sender"])
-                                # sync_bc(client, client_user.name)
-
-                            if client_user.blockchain[-1].hash == data["data"]["prev_hash"]:
-                                debug_log("Previous hash of incoming block doesn't match local. Synchronizing blockchain.")
-                                # synchronize_blockchain(client_user, data.get("data", "'data' not found while synchronizing").get("chain", "'chain' not found while synchronizing"))
-                                # synchronize_blockchain(client_user, data["data"]["chain"])
-                                # synchronize_blockchain(client_user, data["sender"])
-                                # sync_bc(client, client_user.name)
-                        print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
-                        if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
-                            # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
-                            t = Blockchain(client_user.blockchain.name)
-                            t.load_blockchain()
-                            chain_length = len(t.chain)
-                            prev_hash = t.chain[-1].hash
+            # if data["data"]["data"]["sender_name"] == "XiteNetwork" and data["data"]["data"]["recipient_name"] == client_user.username:
+            #     print(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
+            #     block = make_node_block(data, client_user)
+            #     client_user.blockchain.add_block(block)
+            #     client_user.blockchain.save_blockchain()
+            #     debug_log("Block added to blockchain without mining as it already has a nonce")
+            #     # debug_log("Now syncing bc as latest transaction was from XiteNetwork")
+            #     # sync_bc()
+            print(colored("BEFORE WALLET THING", 'red'))
+            print(colored(data, 'red'))
 
 
-                            client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
-                            return
-                            wallet = XiteUser("XiteNetwork", "pass", client_user.blockchain)
-                            #after mining the user tells to the server that it mined the block (the server "gets to know this") and then the server adds reward to that user's wallet database
+            if MINE:
+                # if not block.is_mined(): # block isnt mined yet
+                if data["data"]["nonce"] == 0:
+                    print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
+                    add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+                    print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                    i = 0
+                    for transaction in TRANSACTION_BUFFER:
+                        i += 1
+                        print("----Transaction Data----")
+                        print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
+                        # print(json.dumps(transaction, indent=4))
+                        print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
+                        print_transaction_data(transaction)
+                        print("--------------------")
+                    print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+                    #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
+                    client_user.blockchain.load_blockchain()
+
+                    print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
+                    if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
+                        # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
+                        t = Blockchain(client_user.blockchain.name)
+                        t.load_blockchain()
+                        chain_length = len(t.chain)
+                        prev_hash = t.chain[-1].hash
+                        debug_log(f"Previous hash: {prev_hash}")
+                        if data.get('sender', KeyError("sender not in data")) == client_user.username:
+                            #ignore the block and dont mine:
+                            # print(colored("Block sender is client user with nonce !=0, saving block", 'yellow'))
+                            # block = make_node_block(data, client_user)
+                            # client_user.blockchain.add_block(block)
+                            # client_user.blockchain.save_blockchain()
+                            # debug_log("Block added to blockchain without mining as it already has a nonce")
+                            # debug_log("Now saving to wallet as latest transaction was from client user")
+                            # colored(data, 'magenta')
+                            print(colored("Adding to wallet, sender is client user", 'yellow', attrs=['bold']))
+                            client_user.save_to_wallet(-data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
+                            debug_log("Now syncing bc as latest transaction was from client user")
+                            sync_bc()
+                        elif data['data']['data'].get("recipient_name", KeyError("recipient_name not found")) == client_user.username:
+                            print(colored('IN RECIPIENT_NAME THING', 'yellow'))
+                            #block is already mined
+                            # print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
+                            # print(colored(data["data"], attrs=['bold'], color='green'))
+                            # debug_log("Saving already mined block")
+                            # block = make_node_block(data, client_user)
+                            # client_user.blockchain.add_block(block)
+                            # client_user.blockchain.save_blockchain()
+                            # debug_log("Block added to blockchain without mining as it already has a nonce")
+                            print(colored("Adding to wallet, receiver is client user", 'yellow', attrs=['bold']))
+                            client_user.save_to_wallet(data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
+                            sync_bc()
+
+                        # client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
+                        client_user.save_to_wallet(REWARD, client_user.username, "XiteNetwork", message = f"Reward for hash: {data['data']['hash']}")
+
+                        # return
+                        # wallet = XiteUser("XiteNetwork", "pass", client_user.blockchain)
+                        # #after mining the user tells to the server that it mined the block (the server "gets to know this") and then the server adds reward to that user's wallet database
 
 
-                            #making the block for reward where reward is given from server, after this we will mine this block ourselfs and broadcast transaction with the nonce also
-                            reward_data = wallet.nwtransaction(client_user, REWARD, save = False, return_as_json = True, check_balance=False)
-                            s_reward_data = make_json(data =reward_data, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
-                            s_reward_data = json.loads(s_reward_data)  # Convert send_data to a dictionary
-                            # send_data["data"]["data"]["chain_length"] = chain_length
-                            # print(colored(send_data, "yellow"))
+                        # #making the block for reward where reward is given from server, after this we will mine this block ourselfs and broadcast transaction with the nonce also
+                        # reward_data = wallet.nwtransaction(client_user, REWARD, save = False, return_as_json = True, check_balance=False)
+                        # s_reward_data = make_json(data =reward_data, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+                        # s_reward_data = json.loads(s_reward_data)  # Convert send_data to a dictionary
+                        # # send_data["data"]["data"]["chain_length"] = chain_length
+                        # # print(colored(send_data, "yellow"))
 
-                            mined_reward_block = XiteUser.mine_block(s_reward_data, client_user).to_dict()
-                            mined_reward_data = make_json(mined_reward_block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
-                            mined_reward_data = json.loads(mined_reward_data)  # Convert send_data to a dictionary
-                            mined_reward_data["data"]["data"]["chain_length"] = chain_length
-        
-                            if mined_reward_data["data"]["nonce"] == 0:
-                                raise Exception("Block not mined yet")
-                            else:
-                                debug_log("Mined reward data: ",mined_reward_data)
-                            client.send(json.dumps(mined_reward_data).encode())
-                            print(colored("Sent reward transaction data", 'green'))
-                    else:
-                        # block is already mined
-                        print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
-                        print(colored(data["data"], attrs=['bold'], color='green'))
-                        debug_log("Saving already mined block")
-                        block = make_node_block(data, client_user)
-                        client_user.blockchain.add_block(block)
-                        client_user.blockchain.save_blockchain()
-                        debug_log("Block added to blockchain without mining as it already has a nonce")
+                        # mined_reward_block = XiteUser.mine_block(s_reward_data, client_user).to_dict()
+                        # mined_reward_data = make_json(mined_reward_block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+                        # mined_reward_data = json.loads(mined_reward_data)  # Convert send_data to a dictionary
+                        # mined_reward_data["data"]["data"]["chain_length"] = chain_length
+    
+                        # # if mined_reward_data["data"]["nonce"] == 0:
+                        # #     raise Exception("Block not mined yet")
+                        # # else:
+                        # #     debug_log("Mined reward data: ",mined_reward_data)
+                        # # client.send(json.dumps(mined_reward_data).encode())
+                        # # print(colored("Sent reward transaction data", 'green'))
+                else:
+                    pass
+                    # block is already mined
+                    # print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
+                    # print(colored(data["data"], attrs=['bold'], color='green'))
+                    # debug_log("Saving already mined block")
+                    # block = make_node_block(data, client_user)
+                    # client_user.blockchain.add_block(block)
+                    # client_user.blockchain.save_blockchain()
+                    # debug_log("Block added to blockchain without mining as it already has a nonce")
         else:
             print(colored("No action specified", 'light_red'))
             print(colored(data, 'light_grey'))
@@ -241,7 +255,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
         if load_blockchain_from_data(received_blockchain, data["data"]):
             if received_blockchain.verify_blockchain():
                 print("Blockchain verification successful")
-                # consensus algorithm:
+                # consensus algorithm in network (offline implementation done in node.py):
                 if len(received_blockchain.chain) > len(client_user.blockchain.chain):
                     print("Blockchain updated with longer chain from server")
                     client_user.blockchain = received_blockchain
@@ -250,10 +264,10 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
                     client_user.blockchain.save_blockchain()
                     print(client_user.blockchain)
                     print("Blockchain saved successfully")
-                else:
-                    print("Error occurred while verifying blockchain")
+                # else:
+                #     print("Error occurred while verifying blockchain")
                     
-                    raise Exception("Blockchain verification failed")
+                #     raise Exception("Blockchain verification failed")
         else:
             print("Failed to synchronize and load blockchain")
             raise Exception("Failed to synchronize and load blockchain")
@@ -287,7 +301,7 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
         for block in blockchain_data:
             sender = User(block['data']['sender_name'], blockchain)
             recipient = User(block['data']['recipient_name'], blockchain)
-            data = Data(sender, recipient, block['data']['amount'], block['data']['message'], block['timestamp']) # Corrected here
+            data = Data(sender, recipient, block['data']['amount'], block['data']['message'], block['timestamp'])
             new_block = Block(data, int(block['nonce']), hash = block['hash'], prev_hash = block['prev_hash'], timestamp = block['timestamp'])  
             blockchain.chain.append(new_block)
         blockchain.save_blockchain()
@@ -301,6 +315,8 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
     t = Blockchain(blockchain.name)
     t.load_blockchain()
     chain_length = len(t.chain)
+    print("printing blockchain before prev_hash", 'magenta')
+    print(t, 'magenta')
     if chain_length > 0:
         prev_hash = t.chain[-1].hash
         debug_log(f"Previous hash: {prev_hash}")
@@ -310,6 +326,7 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
         print(colored(send_data, "yellow"))
         client.send(json.dumps(send_data).encode())
     print(colored("Sent transaction data", 'green'))
+    # client_user.save_to_wallet(-amount, recipient, client_user.username)
 
 #temporary method for updating chain length, length is updated by the server, 
 #TODO: implement this

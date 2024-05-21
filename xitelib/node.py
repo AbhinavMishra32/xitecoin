@@ -26,8 +26,6 @@ import rsa
 # from settings.settings import Settings
 import time
 import os
-from util.debug import debug_log
-
 
 # DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
 DIFFICULITY = 4
@@ -61,7 +59,9 @@ class Block:
             self.timestamp = timestamp
         self.data = data
         self.nonce = nonce
-        if hash is None:
+        if data.sender.name == "Genesis":
+                self.hash = "xite"
+        elif hash is None:
             self.hash = self.hash_block()
         else:
             self.hash = hash
@@ -186,7 +186,9 @@ class Blockchain:
                     timestamp = block['timestamp']
                     # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
                     new_block = Block(data, block['nonce'], timestamp = timestamp)
-                    new_block.hash = new_block.hash_block()
+                    if new_block.data.sender.name != "Genesis":
+                        new_block.hash = new_block.hash_block()
+                    
                     if len(self.chain) > 0:
                         new_block.prev_hash = self.chain[-1].hash
                     self.chain.append(new_block)
@@ -374,30 +376,35 @@ class User:
     def update_balance(self):
         self.amount = self.get_balance()
 
-    def save_to_wallet(self, amount: int, recipient: str, sender: str):
-        self.update_balance()
-        self.amount += amount
+    def save_to_wallet(self, amount: int, recipient: str, sender: str, message = None):
+        # self.amount += amount #might be temporary only, could reset after stopping the script, commenting for now
         transaction = {
                     "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
                     "amount": amount,
                     "sender": sender,
                     "recipient": recipient
                     }  
-        print(f"Transaction: {transaction}")
+        # print(f"Transaction: {transaction}")
         
         self.wallet['bc_name'] = self.blockchain.name
         self.wallet['name'] = self.name
         self.wallet['net_amount'] = self.amount
+        
+        if message:
+            transaction['message'] = message
           
         if 'history' in self.wallet:
             self.wallet['history'].append(transaction)
         else:
             self.wallet['history'] = [transaction]
 
+
         with open(self.name + "_wallet.json", 'w') as f:
             json.dump(self.wallet, f, indent = 4)
 
-    def print_walllet_history(self):
+        self.update_balance()
+
+    def print_wallet_history(self):
         for transaction in self.wallet.get('history', []):
             print(f"TIMESTAMP: {transaction['timestamp']}, AMOUNT: {transaction['amount']}, SENDER: {transaction['sender']}, NET AMOUNT: {transaction['net_amount']}")
 
@@ -408,23 +415,34 @@ class User:
         for transaction in self.wallet.get('history', KeyError("No history found!")):
             balance += transaction['amount']
 
+        self.wallet['net_amount'] = balance
+
+        with open(self.name + "_wallet.json", 'w') as f:
+            json.dump(self.wallet, f, indent = 4)
+
         # for block in self.blockchain.chain: 
-        #     # if block.data.sender.name == self.name and block.data.recipient.name != self.name:
-        #     #     balance -= block.data.amount
+        #     if block.data.sender.name == self.name and block.data.recipient.name != self.name and block.data.sender.name != "XiteNetwork":
+        #         balance -= block.data.amount
         #     if block.data.recipient.name == self.name and block.data.sender.name != self.name:
         #         balance += block.data.amount
                 
         return balance
     
+    # def update_wallet(self):
+        ## commenting as it will create new transactions everytime we restart the script, creating duplicate transactions
+    #     print('IN UDATE_WALLET FUNCTION')
+    #     print(f"Updating wallet for {self.name}")
+    #     for block in self.blockchain.chain: 
+    #         if block.data.sender.name == self.name and block.data.recipient.name != self.name:
+    #             # balance -= block.data.amount
+    #             self.save_to_wallet(-block.data.amount, block.data.recipient.name, block.data.sender.name)
+    #         if block.data.recipient.name == self.name and block.data.sender.name != self.name:
+    #             # balance += block.data.amount
+    #             self.save_to_wallet(block.data.amount, block.data.recipient.name, block.data.sender.name)
+
     def update_wallet(self):
-        debug_log("Updating wallet")
-        for block in self.blockchain.chain: 
-            if block.data.sender.name == self.name and block.data.recipient.name != self.name:
-                # balance -= block.data.amount
-                self.save_to_wallet(-block.data.amount, block.data.recipient.name, block.data.sender.name)
-            if block.data.recipient.name == self.name and block.data.sender.name != self.name:
-                # balance += block.data.amount
-                self.save_to_wallet(block.data.amount, block.data.recipient.name, block.data.sender.name)
+        with open(self.name + "_wallet.json", 'r') as f:
+            self.wallet = json.load(f)
 
     def sign(self, message: str) -> bytes:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")

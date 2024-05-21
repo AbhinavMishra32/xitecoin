@@ -62,6 +62,10 @@ xitelib.node.InvalidTransactionException: Insufficient balance for Abhinav1
 }
 
 
+After 21 may 2024:
+1. fix the block.prev_hash not being set so it is not used to find the new hash, first make sure if this is the case or not, it could be that it IS having .prev_hash value and making the hash the same cuz the previous blocks are the exact same (could really well be the case) or that its makign the same hash again and again cuz its not having prev_hash.
+
+2. sometimes a client doesnt receieve the transaction for whatever reason and thats why the blockchains go out of sync, i have commented the check_bc_len function so for now its not syncing bc when its recieving transactions, its only checking and syncing when its itself doing a transaction (above the make_transaction function in the write function), fix all of this
 
 
 
