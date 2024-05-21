@@ -26,6 +26,7 @@ import rsa
 # from settings.settings import Settings
 import time
 import os
+from util.debug import debug_log
 
 
 # DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
@@ -347,46 +348,83 @@ class User:
         if self.name != "Genesis":
             self.blockchain = blockchain
             self.public_key, self._private_key = rsa.newkeys(512)
-            self.history = []
+            self.wallet = {}
             
             wallet_name = self.name + "_wallet.json"
 
             if not os.path.exists(wallet_name):
-                self.wallet = {}
                 with open(wallet_name, 'w') as f:
-                    json.dump({"timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "amount": 0, "sender": "null", "net_amount": 0}, f)
+                    json.dump({"bc_name": self.blockchain.name, "name": self.name, "net_amount": 0, "history": []}, f)
+                self.wallet = {"bc_name": self.blockchain.name, "name": self.name, "net_amount": 0, "history": []}
+                self.amount = 0
+
             else:
                 if self.name:
                     with open(wallet_name, 'r') as f:
                         self.wallet = json.load(f)
 
-            self.amount = self.get_balance()
+                if 'history' not in self.wallet:
+                    self.wallet['history'] = []
+                
+                self.amount = self.get_balance()
 
     def __str__(self):
         return f"Name: {self.name}, User on the {self.blockchain} Blockchain, User balance: {self.amount}"
+    
+    def update_balance(self):
+        self.amount = self.get_balance()
 
-    def save_to_wallet(self, amount: int, sender: str):
+    def save_to_wallet(self, amount: int, recipient: str, sender: str):
+        self.update_balance()
         self.amount += amount
-        self.history.append({"timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"), "amount": amount, "sender": sender, "net_amount": self.amount})
+        transaction = {
+                    "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+                    "amount": amount,
+                    "sender": sender,
+                    "recipient": recipient
+                    }  
+        print(f"Transaction: {transaction}")
+        
+        self.wallet['bc_name'] = self.blockchain.name
+        self.wallet['name'] = self.name
+        self.wallet['net_amount'] = self.amount
+          
+        if 'history' in self.wallet:
+            self.wallet['history'].append(transaction)
+        else:
+            self.wallet['history'] = [transaction]
+
         with open(self.name + "_wallet.json", 'w') as f:
-            json.dump(self.wallet, f)
+            json.dump(self.wallet, f, indent = 4)
 
     def print_walllet_history(self):
-        for transaction in self.history:
+        for transaction in self.wallet.get('history', []):
             print(f"TIMESTAMP: {transaction['timestamp']}, AMOUNT: {transaction['amount']}, SENDER: {transaction['sender']}, NET AMOUNT: {transaction['net_amount']}")
 
     def get_balance(self):
         balance = 0
+        self.update_wallet()
         
-        balance += self.wallet.get("net_amount", 0)
+        for transaction in self.wallet.get('history', KeyError("No history found!")):
+            balance += transaction['amount']
 
-        for block in self.blockchain.chain: 
-            if block.data.sender.name == self.name and block.data.recipient.name != self.name:
-                balance -= block.data.amount
-            if block.data.recipient.name == self.name and block.data.sender.name != self.name:
-                balance += block.data.amount
+        # for block in self.blockchain.chain: 
+        #     # if block.data.sender.name == self.name and block.data.recipient.name != self.name:
+        #     #     balance -= block.data.amount
+        #     if block.data.recipient.name == self.name and block.data.sender.name != self.name:
+        #         balance += block.data.amount
                 
         return balance
+    
+    def update_wallet(self):
+        debug_log("Updating wallet")
+        for block in self.blockchain.chain: 
+            if block.data.sender.name == self.name and block.data.recipient.name != self.name:
+                # balance -= block.data.amount
+                self.save_to_wallet(-block.data.amount, block.data.recipient.name, block.data.sender.name)
+            if block.data.recipient.name == self.name and block.data.sender.name != self.name:
+                # balance += block.data.amount
+                self.save_to_wallet(block.data.amount, block.data.recipient.name, block.data.sender.name)
 
     def sign(self, message: str) -> bytes:
         signature = rsa.sign(message.encode(), self._private_key, "SHA-256")
@@ -434,8 +472,10 @@ class User:
                 print("Insufficient balance")
                 raise InvalidTransactionException(f"Insufficient balance for {self.name}")
 
-        recipient.amount += amount
-        self.amount -= amount
+        # recipient.amount += amount
+        # recipient.save_to_wallet(amount, recipient.name, self.name)
+        # self.save_to_wallet(-amount, "self", "self")
+        # self.amount -= amount
         # print(f"{user1.name} gave {user2.name} {amount} $XITE")
         self.message = f"{self.name} gave {recipient.name} {amount} $XITE"  # this message has to be signed
         transaction_data = Data(self, recipient, amount, self.message)
