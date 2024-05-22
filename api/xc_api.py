@@ -7,6 +7,38 @@ app = FastAPI()
 
 XC_API_DIR = os.path.join(os.path.dirname(__file__), "..")
 
+@app.post("/start")
+def start_xiteserver():
+    try:
+        # Get Python interpreter
+        python_interpreter = subprocess.run(['which', 'python'], capture_output=True, text=True).stdout.strip()
+        
+        # Command to execute
+        command = [python_interpreter, '-m', 'xite_network.xiteserver']
+        
+        logging.debug(f"Executing command: {' '.join(command)}")
+        
+        # Run xiteserver subprocess
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            cwd=XC_API_DIR
+        )
+        
+        # Log subprocess output
+        logging.debug(f"Subprocess stdout: {result.stdout.strip()}")
+        logging.debug(f"Subprocess stderr: {result.stderr.strip()}")
+
+        # Check subprocess result
+        if result.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Xitecoin server failed with output: {result.stderr.strip()}")
+
+        return {"output": result.stdout}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 def run_xiteclient(username: str, password: str):
     try:
         # Install requirements
@@ -39,10 +71,11 @@ def run_xiteclient(username: str, password: str):
         return {"output": result.stdout}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-@app.post("/start/{username}/{password}")
+
+@app.post("/login/{username}/{password}")
 def start_xiteclient(username: str, password: str):
     return run_xiteclient(username, password)
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8002)

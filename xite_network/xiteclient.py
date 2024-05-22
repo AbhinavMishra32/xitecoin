@@ -488,17 +488,7 @@ def args_parser():
     set_mine(sys.argv[3])
     return username, password
 
-if __name__ == "__main__":
-    username, password = args_parser()
-    xc = Blockchain(f"xc_{username}", init_load = True)
-
-    client_user = XiteUser(username, password, xc)  
-    # req_bc_update(client_user.username)
-
-    #get updated blockchain from server which gets from other nodes so technically p2p then update the blockchain before making transaction
-    # NOW UPDATE BLOCKCHAIN WITH SYNCED VERSION BEFORE ANY TRANSACTION
-
-    client_user = XiteUser(username, password, xc)
+def main(client_user: XiteUser, client: socket.socket):
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME", "chain_length" : len(xc)}).encode())
 
     print("Checking blockchain length before making logging in...")
@@ -510,3 +500,11 @@ if __name__ == "__main__":
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)
     receive_thread.start()
+
+
+if __name__ == "__main__":
+    username, password = args_parser()
+    xc = Blockchain(f"xc_{username}", init_load = True)
+
+    client_user = XiteUser(username, password, xc)
+    main(client_user, client)

@@ -1,0 +1,14 @@
+[
+    {
+        "prev_hash": "",
+        "hash": "xite",
+        "data": {
+            "sender_name": "Genesis",
+            "recipient_name": "Genesis",
+            "amount": 0,
+            "message": "Genesis Block"
+        },
+        "timestamp": "23/05/2024 00:46:10",
+        "nonce": 32
+    }
+]

@@ -1,7 +1,7 @@
 {
     "bc_name": "xc_Abhinav1",
     "name": "Abhinav1",
-    "net_amount": 4,
+    "net_amount": 5,
     "history": [
         {
             "timestamp": "21/05/2024 16:50:07",
@@ -41,6 +41,19 @@
             "sender": "XiteNetwork",
             "recipient": "Abhinav1",
             "message": "Reward for hash: 6f53dcf0adbe302f4ec93c4a860ea6eb52923aa7df09dac7c348faddc266194f"
+        },
+        {
+            "timestamp": "23/05/2024 00:45:14",
+            "amount": 0,
+            "sender": "Abhinav1",
+            "recipient": "sdf"
+        },
+        {
+            "timestamp": "23/05/2024 00:45:14",
+            "amount": 1,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav1",
+            "message": "Reward for hash: bd1f511a5b28eef80d75d62de69a635b1b028a6ee1eda659454770f058b38d5b"
         }
     ]
 }

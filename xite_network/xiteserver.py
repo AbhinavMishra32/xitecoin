@@ -7,7 +7,7 @@ from util.debug import debug_log
 
 
 HOST = "localhost"
-PORT = 12345
+PORT = 8003
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
