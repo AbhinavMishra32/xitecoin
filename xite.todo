@@ -68,7 +68,8 @@ After 21 may 2024:
 2. sometimes a client doesnt receieve the transaction for whatever reason and thats why the blockchains go out of sync, i have commented the check_bc_len function so for now its not syncing bc when its recieving transactions, its only checking and syncing when its itself doing a transaction (above the make_transaction function in the write function), fix all of this
 
 
-
+xitecoin api: 
+get current net_amount, payment gateway, 
 
 
 
