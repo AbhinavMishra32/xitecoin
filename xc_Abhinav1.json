@@ -8,7 +8,7 @@
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "20/05/2024 23:57:28",
+        "timestamp": "21/05/2024 16:50:07",
         "nonce": 32
     },
     {
@@ -20,19 +20,31 @@
             "amount": 0,
             "message": "Abhinav1 gave Abhinav2 0 $XITE"
         },
-        "timestamp": "20/05/2024 23:57:44",
+        "timestamp": "21/05/2024 16:50:07",
         "nonce": 1312
     },
     {
         "prev_hash": "e9dd7ef44702e4ee7b6606b45925915fee480d8e3a61a9e3ccbd23c9d135a2a7",
-        "hash": "e9dd7ef44702e4ee7b6606b45925915fee480d8e3a61a9e3ccbd23c9d135a2a7",
+        "hash": "8f9cbfeeedbd65ac5a3d977f111f0f58eda00474c8d84bc439da87fff09a9817",
         "data": {
-            "sender_name": "Abhinav1",
-            "recipient_name": "Abhinav2",
-            "amount": 0,
-            "message": "Abhinav1 gave Abhinav2 0 $XITE"
+            "sender_name": "Abhinav2",
+            "recipient_name": "Abhinav1",
+            "amount": 1,
+            "message": "Abhinav2 gave Abhinav1 1 $XITE"
         },
-        "timestamp": "20/05/2024 23:57:45",
-        "nonce": 1312
+        "timestamp": "21/05/2024 16:50:38",
+        "nonce": 31358
+    },
+    {
+        "prev_hash": "8f9cbfeeedbd65ac5a3d977f111f0f58eda00474c8d84bc439da87fff09a9817",
+        "hash": "6f53dcf0adbe302f4ec93c4a860ea6eb52923aa7df09dac7c348faddc266194f",
+        "data": {
+            "sender_name": "Abhinav2",
+            "recipient_name": "Abhinav1",
+            "amount": 0,
+            "message": "Abhinav2 gave Abhinav1 0 $XITE"
+        },
+        "timestamp": "21/05/2024 16:51:48",
+        "nonce": 10884
     }
 ]

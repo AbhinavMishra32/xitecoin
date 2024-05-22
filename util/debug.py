@@ -13,3 +13,7 @@ def debug_log(*args, **kwargs):
         print(colored(f"{debug_info} {message}", 'yellow'))
     else:
         print(colored("[DEBUG] (unknown):", 'yellow'), *args, **kwargs)
+
+
+if __name__ == "__main__":
+    pass
