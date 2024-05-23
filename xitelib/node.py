@@ -405,7 +405,7 @@ class User:
             self.wallet['history'] = [transaction]
 
 
-        with open(self.name + "_wallet.json", 'w') as f:
+        with open(self.wallet_name, 'w') as f:
             json.dump(self.wallet, f, indent = 4)
 
         self.update_balance()
@@ -418,8 +418,11 @@ class User:
         balance = 0
         self.update_wallet()
         
-        for transaction in self.wallet.get('history', KeyError("No history found!")):
-            balance += transaction['amount']
+        if self.wallet.get('history', KeyError("No history found!")) == []:
+            balance = self.wallet.get('net_amount', KeyError("No net amount found in wallet!"))
+        else:
+            for transaction in self.wallet.get('history', KeyError("No history found!")):
+                balance += transaction['amount']
 
         self.wallet['net_amount'] = balance
 
@@ -476,6 +479,7 @@ class User:
             InvalidTransactionException: If the sender has insufficient balance.
 
         """
+        self.update_balance()
         if reward > 0:
             self.amount += reward
             self.message = f"{self.name} mined a block and got {reward} $XITE"

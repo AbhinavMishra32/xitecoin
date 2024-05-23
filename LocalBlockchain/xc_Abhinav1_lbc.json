@@ -8,19 +8,19 @@
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "23/05/2024 16:24:03",
+        "timestamp": "23/05/2024 16:50:21",
         "nonce": 32
     },
     {
         "prev_hash": "xite",
-        "hash": "ea02c36fbcac39870c0234a4c92f35a669372787729afcf3f51dd49f59065c1f",
+        "hash": "e9dd7ef44702e4ee7b6606b45925915fee480d8e3a61a9e3ccbd23c9d135a2a7",
         "data": {
             "sender_name": "Abhinav1",
             "recipient_name": "Abhinav2",
-            "amount": 2,
-            "message": "Abhinav1 gave Abhinav2 2 $XITE"
+            "amount": 0,
+            "message": "Abhinav1 gave Abhinav2 0 $XITE"
         },
-        "timestamp": "23/05/2024 16:25:40",
-        "nonce": 26588
+        "timestamp": "23/05/2024 16:51:05",
+        "nonce": 1312
     }
 ]

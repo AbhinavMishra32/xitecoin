@@ -14,7 +14,7 @@ def strip_color(text):
     return ansi_escape.sub('', text)
 
 def debug_log(*args, env="prod", **kwargs):
-    # env = "dev"
+    env = "dev"
     if env == "dev":
         caller = inspect.currentframe().f_back
         if caller is not None:
