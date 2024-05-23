@@ -1,4 +1,4 @@
-# XiteCoin ($XITE), 2024
+# XiteCoin ($XC), 2024
 # Created by Abhinav Mishra
 
 # This file contains the code for the node of the XiteCoin blockchain network.
@@ -26,6 +26,7 @@ import rsa
 # from settings.settings import Settings
 import time
 import os
+from util.debug import debug_log
 
 # DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
 DIFFICULITY = 4
@@ -84,7 +85,7 @@ class Block:
     def hash_block(self) -> str:
         if HASH_WITHOUT_TIMESTAMP:
             data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.merkel_root})"
-            # print("Data string: ", data_string)
+            # debug_log("Data string: ", data_string)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
             # data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}" #old
@@ -120,7 +121,9 @@ class Blockchain:
     def __init__(self, name: str, init_load = False):
         self.chain: list[Block] = []
         self.name: str = name
-        self.file_path = f"{self.name}.json"
+        self.file_path = os.path.join("LocalBlockchain", self.name + "_lbc.json")
+
+        os.makedirs(os.path.dirname(self.file_path), exist_ok=True)
         
         if init_load:
             self.load_blockchain()
@@ -192,26 +195,26 @@ class Blockchain:
                     if len(self.chain) > 0:
                         new_block.prev_hash = self.chain[-1].hash
                     self.chain.append(new_block)
-                    # print(f"LOADED BLOCK: {block}")
+                    # debug_log(f"LOADED BLOCK: {block}")
                 if len(self.chain) == 0:
                     return False
                 return True
             except Exception as e:
-                print(f"Failed to load blockchain: {e}")
+                debug_log(f"Failed to load blockchain: {e}", env="dev")
                 return False
         if initialize_blockchain():
-            print(f"Blockchain loaded from {self.file_path}")
+            debug_log(f"Blockchain loaded from {self.file_path}")
             return True
         else:
-            print(f"Blockchain is either empty or failed to load from {self.file_path}")
+            debug_log(f"Blockchain is either empty or failed to load from {self.file_path}")
             for i in range(3):
                 for j in range(0, 7):
                     print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
                     time.sleep(0.25)
-                print(" "*60, end="\r")
+                debug_log(" "*60, end="\r")
             print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
-            print("Genesis block created!")
+            debug_log("Genesis block created!")
             self.save_blockchain()
             return False
         
@@ -268,7 +271,7 @@ class Blockchain:
             return block.is_mined()
 
     def verify_block_signature(self, block: "Block") -> bool:
-        # print(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
+        # debug_log(f"Signature: {block.data.message}, PUBLIC KEY: {block.data.sender.public_key}, PRIVATE KEY: {block.data.sender._private_key}")
         signature = block.data.sender.sign(block.data.message)
         if rsa.verify(block.data.message.encode(), signature, block.data.sender.public_key) == "SHA-256":
             return True
@@ -287,7 +290,7 @@ class Blockchain:
             return False
 
     def verify_blockchain(self) -> bool:
-        print("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
+        debug_log("VERIFYING BLOCKCHAIN from [verify_PoW_singlePass]:")
         m = True
         i = 1
         for block in range(i, len(self.chain)):
@@ -298,13 +301,13 @@ class Blockchain:
                 m = False
                 raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
             else:
-                # print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
-                print(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
+                # debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
+                debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
                 i += 1
         if m:
-            print("BLOCKCHAIN VERIFIED!")
+            debug_log("BLOCKCHAIN VERIFIED!")
         else:
-            print("BLOCKCHAIN NOT VERIFIED!")
+            debug_log("BLOCKCHAIN NOT VERIFIED!")
         return m
 
     @staticmethod
@@ -312,14 +315,14 @@ class Blockchain:
         if not blockchain.verify_PoW_singlePass(block):
                 raise InvalidTransactionException("Hash does not match!")
         else:
-            print("BLOCK VERIFIED!")
+            debug_log("BLOCK VERIFIED!")
 
     def save_blockchain(self):
         with open(self.file_path, 'w') as f:
                 json.dump(self.to_dict(), f, indent = 4)
     
     # def save_blockchain(self):
-    #     print(f"Saving blockchain to: {self.file_path}")  # Add this line
+    #     debug_log(f"Saving blockchain to: {self.file_path}")  # Add this line
     #     try:
     #         blockchain_data = []
     #         for block in self.chain:
@@ -335,15 +338,15 @@ class Blockchain:
     #                 'nonce': block.nonce
     #             }
     #             blockchain_data.append(block_data)
-    #         print(f"Data to be written to file: {blockchain_data}")
+    #         debug_log(f"Data to be written to file: {blockchain_data}")
     #         abs_file_path = os.path.abspath(self.file_path)
     #         with open(abs_file_path, 'w') as f:
     #             json.dump(blockchain_data, f)
-    #         print(f"Data written to file: {abs_file_path}")
+    #         debug_log(f"Data written to file: {abs_file_path}")
     #     except IOError as e:
-    #         print(f"IOError: Failed to save blockchain: {e}")
+    #         debug_log(f"IOError: Failed to save blockchain: {e}")
     #     except Exception as e:
-    #         print(f"Unexpected error: Failed to save blockchain: {e}")
+    #         debug_log(f"Unexpected error: Failed to save blockchain: {e}")
 class User:
     def __init__(self, name: str, blockchain: "Blockchain"):
         self.name = name
@@ -351,18 +354,21 @@ class User:
             self.blockchain = blockchain
             self.public_key, self._private_key = rsa.newkeys(512)
             self.wallet = {}
-            
-            wallet_name = self.name + "_wallet.json"
+            self.wallet_name = os.path.join("wallets", self.name + "_wallet.json")
 
-            if not os.path.exists(wallet_name):
-                with open(wallet_name, 'w') as f:
-                    json.dump({"bc_name": self.blockchain.name, "name": self.name, "net_amount": 0, "history": []}, f)
-                self.wallet = {"bc_name": self.blockchain.name, "name": self.name, "net_amount": 0, "history": []}
-                self.amount = 0
+            os.makedirs(os.path.dirname(self.wallet_name), exist_ok=True)
+
+            if not os.path.exists(self.wallet_name):
+                self.wallet = {"bc_name": self.blockchain.name, "name": self.name, "net_amount": 10, "history": []}
+                with open(self.wallet_name, 'w') as f:
+                    json.dump(self.wallet, f , indent = 4)
+                
+                # Giving welcome amount of 10 $XC to the user when they create a wallet
+                self.amount = 10
 
             else:
                 if self.name:
-                    with open(wallet_name, 'r') as f:
+                    with open(self.wallet_name, 'r') as f:
                         self.wallet = json.load(f)
 
                 if 'history' not in self.wallet:
@@ -384,7 +390,7 @@ class User:
                     "sender": sender,
                     "recipient": recipient
                     }  
-        # print(f"Transaction: {transaction}")
+        # debug_log(f"Transaction: {transaction}")
         
         self.wallet['bc_name'] = self.blockchain.name
         self.wallet['name'] = self.name
@@ -406,7 +412,7 @@ class User:
 
     def print_wallet_history(self):
         for transaction in self.wallet.get('history', []):
-            print(f"TIMESTAMP: {transaction['timestamp']}, AMOUNT: {transaction['amount']}, SENDER: {transaction['sender']}, NET AMOUNT: {transaction['net_amount']}")
+            debug_log(f"TIMESTAMP: {transaction['timestamp']}, AMOUNT: {transaction['amount']}, SENDER: {transaction['sender']}, NET AMOUNT: {transaction['net_amount']}")
 
     def get_balance(self):
         balance = 0
@@ -430,8 +436,8 @@ class User:
     
     # def update_wallet(self):
         ## commenting as it will create new transactions everytime we restart the script, creating duplicate transactions
-    #     print('IN UDATE_WALLET FUNCTION')
-    #     print(f"Updating wallet for {self.name}")
+    #     debug_log('IN UDATE_WALLET FUNCTION')
+    #     debug_log(f"Updating wallet for {self.name}")
     #     for block in self.blockchain.chain: 
     #         if block.data.sender.name == self.name and block.data.recipient.name != self.name:
     #             # balance -= block.data.amount
@@ -441,7 +447,7 @@ class User:
     #             self.save_to_wallet(block.data.amount, block.data.recipient.name, block.data.sender.name)
 
     def update_wallet(self):
-        with open(self.name + "_wallet.json", 'r') as f:
+        with open(self.wallet_name, 'r') as f:
             self.wallet = json.load(f)
 
     def sign(self, message: str) -> bytes:
@@ -478,23 +484,23 @@ class User:
             if save:
                 if self.blockchain.verify_block_signature(new_block):
                     self.blockchain.add_block(new_block)
-                    print("Transaction was verified! ")
+                    debug_log("Transaction was verified! ")
                 else:
-                    print("Transaction was not able to be verified!")
+                    debug_log("Transaction was not able to be verified!")
             if return_data:
                 return transaction_data
             if return_block:
                 return new_block.to_dict()
         if check_balance:
             if self.amount < amount:
-                print("Insufficient balance")
+                debug_log("Insufficient balance")
                 raise InvalidTransactionException(f"Insufficient balance for {self.name}")
 
         # recipient.amount += amount
         # recipient.save_to_wallet(amount, recipient.name, self.name)
         # self.save_to_wallet(-amount, "self", "self")
         # self.amount -= amount
-        # print(f"{user1.name} gave {user2.name} {amount} $XITE")
+        # debug_log(f"{user1.name} gave {user2.name} {amount} $XITE")
         self.message = f"{self.name} gave {recipient.name} {amount} $XITE"  # this message has to be signed
         transaction_data = Data(self, recipient, amount, self.message)
         # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
@@ -503,9 +509,9 @@ class User:
         if save:
             if self.blockchain.verify_block_signature(new_block):
                 self.blockchain.add_block(new_block)
-                print("Transaction was verified! ")
+                debug_log("Transaction was verified! ")
             else:
-                print("Transaction was not able to be verified!")
+                debug_log("Transaction was not able to be verified!")
         if return_data:
             return transaction_data
         if return_block:
