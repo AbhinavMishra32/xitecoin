@@ -1,26 +1,33 @@
+from pydoc import cli
 import socket
 import threading
 import traceback
+
+from annotated_types import T
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
 import json
 from util.debug import debug_log
 from termcolor import colored
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+from typing import List
+import uvicorn
 
+app = FastAPI()
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 try:
-    client.connect(("localhost", 12345))
+    client.connect(("localhost", 50000))
 except ConnectionRefusedError as e:
-    print(colored(f"Server not started!", 'red'))
+    debug_log(colored(f"Server not started!", 'red'), env="dev")
     sys.exit(1)
 
 nicknames = []
 TRANSACTION_BUFFER = []
 MINE = False
-REWARD = 1
 
 IS_LONGEST_CHAIN = False
 LONGEST_CHAIN_LENGTH = 0
@@ -42,34 +49,34 @@ def recieve_dbug():
         try:
             data = client.recv(2024)
         except Exception as e:
-            print(f"Error receiving data: {e}")
+            debug_log(f"Error receiving data: {e}")
             break
 
         try:
             decoded_data = data.decode()
         except Exception as e:
-            print(f"Error decoding data: {e}")
+            debug_log(f"Error decoding data: {e}")
             break
 
         try:
             cl_data_recvd = json.loads(decoded_data)
         except Exception as e:
-            print(f"Error parsing JSON: {e}")
+            debug_log(f"Error parsing JSON: {e}")
             break
 
 
 def cl_handle_json(client, data: dict):
-    # print("in cl_handle_json: ")
+    # debug_log("in cl_handle_json: ")
     try:
         sender = data.get("sender") or data.get("reciever")
         if sender:
             if sender not in nicknames:
                 nicknames.append(sender)
-                print("Nicknames stored:")
-                print(nicknames)
-                print(f"New user connected: {sender}")
+                debug_log("Nicknames stored:")
+                debug_log(nicknames)
+                debug_log(f"New user connected: {sender}")
         else:
-            print(colored("No sender specified", 'light_red'))
+            debug_log(colored("No sender specified", 'light_red'))
 
         action = data.get("action")
 
@@ -77,7 +84,7 @@ def cl_handle_json(client, data: dict):
             debug_log("reciever: " ,data["data"]["reciever"])
             debug_log(data)
             chain_length = data["data"]["chain_length"]
-            print(colored(f"RECIEVED CHAIN LENGTH: {chain_length}", 'yellow'))
+            debug_log(colored(f"RECIEVED CHAIN LENGTH: {chain_length}", 'yellow'))
             global LONGEST_CHAIN_CLIENT_NAME
             global LONGEST_CHAIN_LENGTH
             LONGEST_CHAIN_CLIENT_NAME = data["data"]["lgt_c_name"]
@@ -88,7 +95,8 @@ def cl_handle_json(client, data: dict):
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # sync_bc(client, data, client_user.username, recv = True) #this function here wont work as the data is this: {'action': 'C_LEN_BROADCAST', 'data': {'chain_length': 21, 'reciever': 'Abhinav2', 'lgt_c_name': 'Abhinav1'}}, we need the blockchain data to recieve, not the chain length broadcast data
-                client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+                # client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+                sync_bc()
 
             elif chain_length <= len(client_user.blockchain):
                 IS_LONGEST_CHAIN = True
@@ -104,7 +112,7 @@ def cl_handle_json(client, data: dict):
             # client.send(json.dumps({"action": "SEND_BC", "sender": client_user.username, "reciever": data["reciever"]}).encode())
 
         if action == "GIVE_BC" and data["reciever"] == client_user.username:
-            print("Received latest blockchain from server")
+            debug_log("Received latest blockchain from server")
             debug_log("LATEST BLOCKCHAIN: ")
             debug_log(colored(data, 'light_cyan'))
             debug_log("Now starting sync_bc function with recv = True and process = True")
@@ -116,40 +124,40 @@ def cl_handle_json(client, data: dict):
         elif action == "BC_TRANSACTION_DATA":
             # check_bc_len(client_user.blockchain)
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
-            print(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
-            print(colored(f"Block hash: {block.hash}", 'yellow'))
+            debug_log(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
+            debug_log(colored(f"Block hash: {block.hash}", 'yellow'))
             # if data["data"]["data"]["sender_name"] == "XiteNetwork" and data["data"]["data"]["recipient_name"] == client_user.username:
-            #     print(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
+            #     debug_log(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
             #     block = make_node_block(data, client_user)
             #     client_user.blockchain.add_block(block)
             #     client_user.blockchain.save_blockchain()
             #     debug_log("Block added to blockchain without mining as it already has a nonce")
             #     # debug_log("Now syncing bc as latest transaction was from XiteNetwork")
             #     # sync_bc()
-            print(colored("BEFORE WALLET THING", 'red'))
-            print(colored(data, 'red'))
+            debug_log(colored("BEFORE WALLET THING", 'red'))
+            debug_log(colored(data, 'red'))
 
 
             if MINE:
                 # if not block.is_mined(): # block isnt mined yet
                 if data["data"]["nonce"] == 0:
-                    print(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
+                    debug_log(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
                     add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
-                    print(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
+                    debug_log(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
                     i = 0
                     for transaction in TRANSACTION_BUFFER:
                         i += 1
-                        print("----Transaction Data----")
-                        print(colored(f"[{i}]:", 'yellow', attrs=['bold']))
-                        # print(json.dumps(transaction, indent=4))
-                        print(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
+                        debug_log("----Transaction Data----")
+                        debug_log(colored(f"[{i}]:", 'yellow', attrs=['bold']))
+                        # debug_log(json.dumps(transaction, indent=4))
+                        debug_log(colored(f"SENDER'S CHAIN LENGTH : {data['data']['data']['chain_length']}", 'light_cyan', attrs=['bold', 'underline']))  # Remove 'light_cyan' attribute
                         print_transaction_data(transaction)
-                        print("--------------------")
-                    print(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
+                        debug_log("--------------------")
+                    debug_log(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
                     #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
                     client_user.blockchain.load_blockchain()
 
-                    print(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
+                    debug_log(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
                         # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
                         t = Blockchain(client_user.blockchain.name)
@@ -159,33 +167,35 @@ def cl_handle_json(client, data: dict):
                         debug_log(f"Previous hash: {prev_hash}")
                         if data.get('sender', KeyError("sender not in data")) == client_user.username:
                             #ignore the block and dont mine:
-                            # print(colored("Block sender is client user with nonce !=0, saving block", 'yellow'))
+                            # debug_log(colored("Block sender is client user with nonce !=0, saving block", 'yellow'))
                             # block = make_node_block(data, client_user)
                             # client_user.blockchain.add_block(block)
                             # client_user.blockchain.save_blockchain()
                             # debug_log("Block added to blockchain without mining as it already has a nonce")
                             # debug_log("Now saving to wallet as latest transaction was from client user")
                             # colored(data, 'magenta')
-                            print(colored("Adding to wallet, sender is client user", 'yellow', attrs=['bold']))
+                            debug_log(colored("Adding to wallet, sender is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(-data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
                             debug_log("Now syncing bc as latest transaction was from client user")
                             sync_bc()
                         elif data['data']['data'].get("recipient_name", KeyError("recipient_name not found")) == client_user.username:
-                            print(colored('IN RECIPIENT_NAME THING', 'yellow'))
+                            debug_log(colored('IN RECIPIENT_NAME THING', 'yellow'))
                             #block is already mined
-                            # print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
-                            # print(colored(data["data"], attrs=['bold'], color='green'))
+                            # debug_log(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
+                            # debug_log(colored(data["data"], attrs=['bold'], color='green'))
                             # debug_log("Saving already mined block")
                             # block = make_node_block(data, client_user)
                             # client_user.blockchain.add_block(block)
                             # client_user.blockchain.save_blockchain()
                             # debug_log("Block added to blockchain without mining as it already has a nonce")
-                            print(colored("Adding to wallet, receiver is client user", 'yellow', attrs=['bold']))
+                            debug_log(colored("Adding to wallet, receiver is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
                             sync_bc()
 
                         # client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
-                        client_user.save_to_wallet(REWARD, client_user.username, "XiteNetwork", message = f"Reward for hash: {data['data']['hash']}")
+
+                        reward = data['data']['data']['amount'] / 10 # will be in float
+                        client_user.save_to_wallet(reward, client_user.username, "XiteNetwork", message = f"Reward for hash: {data['data']['hash']}")
 
                         # return
                         # wallet = XiteUser("XiteNetwork", "pass", client_user.blockchain)
@@ -197,7 +207,7 @@ def cl_handle_json(client, data: dict):
                         # s_reward_data = make_json(data =reward_data, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
                         # s_reward_data = json.loads(s_reward_data)  # Convert send_data to a dictionary
                         # # send_data["data"]["data"]["chain_length"] = chain_length
-                        # # print(colored(send_data, "yellow"))
+                        # # debug_log(colored(send_data, "yellow"))
 
                         # mined_reward_block = XiteUser.mine_block(s_reward_data, client_user).to_dict()
                         # mined_reward_data = make_json(mined_reward_block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
@@ -209,26 +219,26 @@ def cl_handle_json(client, data: dict):
                         # # else:
                         # #     debug_log("Mined reward data: ",mined_reward_data)
                         # # client.send(json.dumps(mined_reward_data).encode())
-                        # # print(colored("Sent reward transaction data", 'green'))
+                        # # debug_log(colored("Sent reward transaction data", 'green'))
                 else:
                     pass
                     # block is already mined
-                    # print(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
-                    # print(colored(data["data"], attrs=['bold'], color='green'))
+                    # debug_log(colored("Block already mined", attrs=['bold'], color='green', on_color='on_white'))
+                    # debug_log(colored(data["data"], attrs=['bold'], color='green'))
                     # debug_log("Saving already mined block")
                     # block = make_node_block(data, client_user)
                     # client_user.blockchain.add_block(block)
                     # client_user.blockchain.save_blockchain()
                     # debug_log("Block added to blockchain without mining as it already has a nonce")
         else:
-            print(colored("No action specified", 'light_red'))
-            print(colored(data, 'light_grey'))
+            debug_log(colored("No action specified", 'light_red'))
+            debug_log(colored(data, 'light_grey'))
 
     except Exception as e:
-        print(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
-        print(colored("TRACEBACK OF CL_HANDLE_JSON:", attrs=['bold'], color='red'))
+        debug_log(colored(f"Error occurred while handling json: {e}", attrs=['bold'], color='light_red'))
+        debug_log(colored("TRACEBACK OF CL_HANDLE_JSON:", attrs=['bold'], color='red'))
         traceback.print_exc()
-        print(colored(json.dumps(data, indent = 4), 'red'))
+        debug_log(colored(json.dumps(data, indent = 4), 'red'))
 
 def make_json(data, sender: str = "Default sender", action: str = "Default action", **kwargs) -> str:
     if isinstance(data, set):
@@ -248,28 +258,28 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
         pass
     if recv and process:
         debug_log("INSIDE SYNC_BC FUNCTION [RECV]")
-        print("Received blockchain from:", data.get("sender", KeyError("No sender found in data")))
-        print(colored(data, 'green'))
+        debug_log("Received blockchain from:", data.get("sender", KeyError("No sender found in data")))
+        debug_log(colored(data, 'green'))
         data["bc_name"] = client_user.blockchain.name
         received_blockchain = Blockchain(data["bc_name"])
         if load_blockchain_from_data(received_blockchain, data["data"]):
             if received_blockchain.verify_blockchain():
-                print("Blockchain verification successful")
+                debug_log("Blockchain verification successful")
                 # consensus algorithm in network (offline implementation done in node.py):
                 if len(received_blockchain.chain) > len(client_user.blockchain.chain):
-                    print("Blockchain updated with longer chain from server")
+                    debug_log("Blockchain updated with longer chain from server")
                     client_user.blockchain = received_blockchain
                     debug_log("now printing the loaded blockchain:")
                     client_user.blockchain.load_blockchain()
                     client_user.blockchain.save_blockchain()
-                    print(client_user.blockchain)
-                    print("Blockchain saved successfully")
+                    debug_log(client_user.blockchain)
+                    debug_log("Blockchain saved successfully")
                 # else:
-                #     print("Error occurred while verifying blockchain")
+                #     debug_log("Error occurred while verifying blockchain")
                     
                 #     raise Exception("Blockchain verification failed")
         else:
-            print("Failed to synchronize and load blockchain")
+            debug_log("Failed to synchronize and load blockchain")
             raise Exception("Failed to synchronize and load blockchain")
     if send:
         # debug_log("INSIDE SYNC_BC FUNCTION [SEND]")
@@ -277,17 +287,17 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
             blockchain_json = json.load(f)
             blockchain = Blockchain(client_user.blockchain.name)
             blockchain.load_blockchain()
-            print(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
+            debug_log(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
             client.send(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
             debug_log("Blockchain data sent to client: ")
-            # print(blockchain)
+            # debug_log(blockchain)
 
 def make_block(recipient: str, amount: int):
     recp_user = User(recipient,client_user.blockchain)
     try:
         return client_user.nwtransaction(recp_user, amount, save = False, return_as_json = True)
     except InvalidTransactionException as e:
-        print(colored(f"Error occurred while making transaction: {e}", 'red'))
+        debug_log(colored(f"Error occurred while making transaction: {e}", 'red'))
         return None
     # return client_user.blockchain.chain[-1].to_dict()
 
@@ -306,26 +316,28 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             blockchain.chain.append(new_block)
         blockchain.save_blockchain()
         blockchain.load_blockchain()
+        # future functionality: add timestamp when updating through blockchain so that in wallet it shows when the transaction occured, not when it was updated
+        XiteUser.update_wallet_through_blockchain(client_user)
         return True
     except Exception as e:
-        print(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")
+        debug_log(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")
         return False
 
 def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
     t = Blockchain(blockchain.name)
     t.load_blockchain()
     chain_length = len(t.chain)
-    print("printing blockchain before prev_hash", 'magenta')
-    print(t, 'magenta')
+    debug_log("printing blockchain before prev_hash", 'magenta')
+    debug_log(t, 'magenta')
     if chain_length > 0:
         prev_hash = t.chain[-1].hash
         debug_log(f"Previous hash: {prev_hash}")
         send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
         send_data = json.loads(send_data)  # Convert send_data to a dictionary
         send_data["data"]["data"]["chain_length"] = chain_length
-        print(colored(send_data, "yellow"))
+        debug_log(colored(send_data, "yellow"))
         client.send(json.dumps(send_data).encode())
-    print(colored("Sent transaction data", 'green'))
+    debug_log(colored("Sent transaction data", 'green'))
     # client_user.save_to_wallet(-amount, recipient, client_user.username)
 
 #temporary method for updating chain length, length is updated by the server, 
@@ -340,18 +352,17 @@ def req_bc_update(rec_name: str):
     client.send(json.dumps({"action": "UPDATE_BC", "sender": rec_name}).encode())
 
 
-
 def sync_bc():
     # actual function with sync logic in process_sync_bc
     client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
 
 def chain_len_status():
     if IS_LONGEST_CHAIN:
-        print(colored("Blockchain is up to date", 'green'))
-        print(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'green'))
+        debug_log(colored("Blockchain is up to date", 'green'))
+        debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'green'))
     else:
-        print(colored("Blockchain is not up to date", 'red'))
-        print(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'red'))
+        debug_log(colored("Blockchain is not up to date", 'red'))
+        debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'red'))
 
 def check_bc_len(bc:Blockchain) -> bool:
     """
@@ -361,47 +372,64 @@ def check_bc_len(bc:Blockchain) -> bool:
     debug_log("INSIDE CHECK_BC_LEN FUNCTION")
     client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "reciever": "server", "chain_length": len(bc)}).encode())
     return IS_LONGEST_CHAIN
-def write(bc: Blockchain):
-    # print("write thread started")
+
+def console_cli(client_user: XiteUser):
     while True:
         print("---------XITECOIN---------")
-        payment: str = input("\nEnter payment: ")
-        try:
-            recipient = payment.split(' ')[0]
-            amount = int(payment.split(' ')[1])
-            print("Checking blockchain length before making transaction...")
-            check_bc_len(bc)
-            chain_len_status()
-            if xc.verify_blockchain():
-                colored("Blockchain verification successful before transaction", 'green')
-                make_transaction(recipient, amount, client_user.blockchain)
-            else:
-                print("Error occurred while verifying blockchain")
-                raise Exception("Blockchain verification failed")
-        except Exception:
-            # print("IndexError occurred while handling json")
-            print(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']))
-        # for i in range(1,5):
+        print("1. Check balance")
+        print("2. Check blockchain length")
+        print("3. Make transaction")
+        print("4. Exit")
+        choice = input("Enter choice: ")
+        if choice == '1':
+            print("Checking balance...")
+            # client_user.check_balance()
+        elif choice == '2':
+            print("Checking blockchain length...")
+            print("Length: ", len(client_user.blockchain))
+        elif choice == '3':
+            print("Making transaction...")
+            recipient = input("Enter recipient: ")
+            amount = int(input("Enter amount: "))
+            if xc_transaction(recipient, amount, client_user.blockchain):
+                print("Transaction successful")
+        elif choice == '4':
+            client.close()
+            print("Exiting...")
+            quit()
+        else:
+            print("Invalid choice")
 
-        # if client_user.user_exists(recipient):
-        #     print("User exists")
-        #     recp_user = User(recipient,client_user.blockchain)
-        #     client_user.nwtransaction(recp_user, amount)
-        # else:
-        #     print("User doesn't exist")
-        #     print("Making new user to put in blockchain")
-        #     recp_user = User(recipient,client_user.blockchain)
-        #     client_user.nwtransaction(recp_user, amount)
-        #     continue
-        
-        # data = [block.to_dict() for block in client_user.blockchain.chain]
-        # json_test = json.dumps({"message": {"hello":"hello1"}, "sender": client_user.username, "data": {"test": "data"}})
-    # json_test = make_json(sender = client_user.username,action = "test action", data = {"hello":"hello1"})
-    # client.send(json_test.encode())
-    # print(json_test)
-    # print("Sent message!")
+
+def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
+    try:
+        debug_log("Checking blockchain length before making transaction...")
+        check_bc_len(bc)
+        chain_len_status()
+        if xc.verify_blockchain():
+            debug_log(colored("Blockchain verification successful before transaction", 'green'))
+            make_transaction(recipient, amount, client_user.blockchain)
+            return True
+        else:
+            debug_log("Error occurred while verifying blockchain")
+            raise Exception("Blockchain verification failed")
+    except Exception as e:
+        debug_log(colored(f"Error occurred during transaction: {e}", 'red'))
+        return False
+
+
+def write(bc: Blockchain):
     while True:
-        pass
+        try:
+            console_cli(client_user)
+        except IndexError:
+            debug_log(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']), env="dev")
+        except ValueError:
+            debug_log(colored("Please enter transaction correctly. [Username] [Amount]",'red',attrs =['bold']) , env="dev")
+        except Exception as e:
+            debug_log(colored(f"Error occurred while making transaction: {e}", 'red') , env="dev")
+            traceback.print_exc()
+
 
 def send_message(action: str, message):
     message_dict = json.loads(message)
@@ -411,7 +439,7 @@ def send_message(action: str, message):
         "sender": client_user.username, 
         "data": message_dict.get("data", {})  # Use a default value if "data" key is not present
     }) 
-    print(msg_json)
+    debug_log(msg_json)
     client.send(msg_json.encode())
 
 def load_multiple_json_objects(data):
@@ -422,7 +450,7 @@ def load_multiple_json_objects(data):
             json_objects.append(json.loads('{' + obj))
         return json_objects
     except json.JSONDecodeError as e:
-        print(f"JSONDecodeError: {e}")
+        debug_log(f"JSONDecodeError: {e}")
 
 def recv_msg():
     buffer = ""
@@ -434,27 +462,27 @@ def recv_msg():
                 try:
                     data_json, index = json.JSONDecoder().raw_decode(buffer)
                     buffer = buffer[index:].lstrip()
-                    print(colored(data_json, 'cyan'))
+                    debug_log(colored(data_json, 'cyan'))
                     if data_json:
                         cl_handle_json(client, data_json)
                     else:
-                        print("No data received")
+                        debug_log("No data received")
                 except ValueError:
                     # Not enough data to decode, wait for more
                     break
         except Exception as e:
-            print(colored(f"Error occurred while receiving json [recv_msg]: {e}", 'red'))
+            debug_log(colored(f"Error occurred while receiving json [recv_msg]: {e}", 'red'))
             traceback.print_exc()
             break
         # finally:
-        #     print("actual data recieved:")
-        #     print(data)
+        #     debug_log("actual data recieved:")
+        #     debug_log(data)
         
 
 # def mining_thread():
 #     while True:
 #         if TRANSACTION_BUFFER:
-#             print("NOW MINING BLOCK: ")
+#             debug_log("NOW MINING BLOCK: ")
 #             XiteUser.process_mined_block(TRANSACTION_BUFFER, client_user, use_multithreading=False)
         
 
@@ -462,23 +490,23 @@ def recv_msg():
 
 def print_transaction_data(transaction_data, repeat=False):
     try:
-        print(colored("\nBlock Data:", 'yellow'), end="\r" if repeat else "\n")
-        print(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Timestamp: {transaction_data['timestamp']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Nonce: {transaction_data['nonce']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored("\nTransaction Details:", 'yellow'), end="\r" if repeat else "\n")
-        print(colored(f"Sender Name: {transaction_data['data']['sender_name']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Recipient Name: {transaction_data['data']['recipient_name']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Amount: {transaction_data['data']['amount']}", 'light_cyan'), end="\r" if repeat else "\n")
-        print(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored("\nBlock Data:", 'yellow'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Previous Hash: {transaction_data['prev_hash']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Hash: {transaction_data['hash']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Timestamp: {transaction_data['timestamp']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Nonce: {transaction_data['nonce']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored("\nTransaction Details:", 'yellow'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Sender Name: {transaction_data['data']['sender_name']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Recipient Name: {transaction_data['data']['recipient_name']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Amount: {transaction_data['data']['amount']}", 'light_cyan'), end="\r" if repeat else "\n")
+        debug_log(colored(f"Message: {transaction_data['data']['message']}", 'light_cyan'), end="\r" if repeat else "\n")
     except:
-        print(colored("Error occurred while printing transaction data", 'red'))
+        debug_log(colored("Error occurred while printing transaction data", 'red'))
         traceback.print_exc()
 
 def args_parser():
     if len(sys.argv) != 4:
-        print("Usage: python3 xiteclient.py <username> <password> [MINE]: True / False")
+        debug_log("Usage: python3 xiteclient.py <username> <password> [MINE]: True / False")
         sys.exit(1)
 
     # implement login system for username and password:
@@ -488,18 +516,57 @@ def args_parser():
     set_mine(sys.argv[3])
     return username, password
 
+class Transaction(BaseModel):
+    username: str
+    amount: int
+    status: str
+
+class Balance(BaseModel):
+    bc_name: str
+    name: str
+    net_amount: int
+    history: List[dict]
+
+@app.post("/tr/{username}/{amount}")
+def send_transaction(username: str, amount: int):
+    try:
+        xc_transaction(username, amount, client_user.blockchain)
+        return Transaction(username=username, amount=amount, status="success")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/wallet")
+def get_balance():
+    try:
+        with open(client_user.wallet_name, 'r') as f:
+            data = json.load(f)
+
+        net_amount = data["net_amount"]
+        history = data["history"]
+
+        latest_transaction = history[-1] if history else None
+
+        for item in data:
+            # if i["name"] == client_user.username:
+            return Balance(bc_name="xc_Abhinav2", name=client_user.username, net_amount=net_amount, history=history)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 def main(client_user: XiteUser, client: socket.socket):
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME", "chain_length" : len(xc)}).encode())
 
-    print("Checking blockchain length before making logging in...")
+    debug_log("Checking blockchain length before making logging in...")
     check_bc_len(xc)
 
-    print("printing LONGEST_CHAIN_LENGTH :-")
-    print(LONGEST_CHAIN_LENGTH)
+    debug_log("printing LONGEST_CHAIN_LENGTH :-")
+    debug_log(LONGEST_CHAIN_LENGTH)
     write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)
     receive_thread.start()
+
+    uvicorn.run(app, host="localhost", port=8000)
 
 
 if __name__ == "__main__":
