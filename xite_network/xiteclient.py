@@ -95,7 +95,8 @@ def cl_handle_json(client, data: dict):
                 debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # sync_bc(client, data, client_user.username, recv = True) #this function here wont work as the data is this: {'action': 'C_LEN_BROADCAST', 'data': {'chain_length': 21, 'reciever': 'Abhinav2', 'lgt_c_name': 'Abhinav1'}}, we need the blockchain data to recieve, not the chain length broadcast data
-                client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+                # client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+                sync_bc()
 
             elif chain_length <= len(client_user.blockchain):
                 IS_LONGEST_CHAIN = True
@@ -315,6 +316,8 @@ def load_blockchain_from_data(blockchain: Blockchain, blockchain_data: list) -> 
             blockchain.chain.append(new_block)
         blockchain.save_blockchain()
         blockchain.load_blockchain()
+        # future functionality: add timestamp when updating through blockchain so that in wallet it shows when the transaction occured, not when it was updated
+        XiteUser.update_wallet_through_blockchain(client_user)
         return True
     except Exception as e:
         debug_log(f"Failed to synchronize blockchain [{colored('load_blockchain_from_data', 'light_magenta')}]: {e}")

@@ -26,6 +26,7 @@ import rsa
 # from settings.settings import Settings
 import time
 import os
+from util import debug
 from util.debug import debug_log
 
 # DIFFICULITY = Settings.BLOCKCHAIN_DIFFICULITY.value
@@ -48,12 +49,12 @@ class Data:
     def __str__(self):
         return self.message
 class Block:
-    def __init__(self, data: Data, nonce: int = 0, prev_hash = None, hash = None, timestamp = None):
+    def __init__(self, data: Data, nonce: int = 0, prev_hash = "", hash = None, timestamp = None):
         self.merkel_root = ""
-        if prev_hash is None:
-            self.prev_hash = ""
-        else:
-            self.prev_hash = prev_hash
+        # if prev_hash is None:
+        #     self.prev_hash = ""
+        # else:
+        self.prev_hash = prev_hash
         if timestamp is None:
             self.timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")  # string
         else:
@@ -66,6 +67,8 @@ class Block:
             self.hash = self.hash_block()
         else:
             self.hash = hash
+
+        debug_log("Previous hash while initializing Block: ", self.prev_hash)
 
     def __str__(self):
         return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
@@ -84,8 +87,11 @@ class Block:
 
     def hash_block(self) -> str:
         if HASH_WITHOUT_TIMESTAMP:
+            if self.prev_hash == "":
+                raise InvalidBlockchainException("Previous hash is empty while hashing!")
             data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.merkel_root})"
             # debug_log("Data string: ", data_string)
+            debug_log("Previous Hash in hash_block: ", self.prev_hash)
             return hashlib.sha256(data_string.encode()).hexdigest()
         else:
             # data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.data.timestamp}{self.merkel_root}" #old
@@ -153,6 +159,12 @@ class Blockchain:
             chain_data += "\n"
         return chain_data
     
+    def update_prev_hash(self):
+        for block in self.chain:
+            block.prev_hash = self.chain[self.chain.index(block)-1].hash
+            debug_log(f"Previous hash updated to: {block.prev_hash}, for block: {block}")
+            return True
+    
     def verify_prev_hash(self) -> bool:
         for block in self.chain:
             if block.prev_hash != self.chain[self.chain.index(block)-1].hash:
@@ -189,11 +201,15 @@ class Blockchain:
                     timestamp = block['timestamp']
                     # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
                     new_block = Block(data, block['nonce'], timestamp = timestamp)
+                    if len(self.chain) > 0:
+                        if new_block.prev_hash != self.chain[-1].hash:
+                            new_block.prev_hash = self.chain[-1].hash
+                            debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
+
                     if new_block.data.sender.name != "Genesis":
                         new_block.hash = new_block.hash_block()
+                        debug_log("prev_hash added in load_blockchain: ", new_block.prev_hash)
                     
-                    if len(self.chain) > 0:
-                        new_block.prev_hash = self.chain[-1].hash
                     self.chain.append(new_block)
                     # debug_log(f"LOADED BLOCK: {block}")
                 if len(self.chain) == 0:
@@ -234,6 +250,7 @@ class Blockchain:
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
+        self.update_prev_hash()
         iteration = 0
         while self.valid_proof(block, block.nonce)[0] is False:
             iteration += 1
@@ -242,8 +259,11 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        # guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
-        guess = f"{block.hash}{nonce}".encode()
+        if self.update_prev_hash():
+            debug_log(f"prev_hash of {block} updated in valid_proof!")
+
+        guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
+        # guess = f"{block.hash}{nonce}".encode()
         # guess = f"{nonce}{block.merkel_root}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
         
@@ -260,10 +280,12 @@ class Blockchain:
             Returns:
             - bool: True if the block is successfully added and mined, False otherwise.
             """
+            # block.prev_hash = self.chain[-1].hash
             if auto_load:
                 self.load_blockchain()
             if len(self.chain) > 0:
                 block.prev_hash = self.chain[-1].hash
+                debug_log("Previous hash in add_block: ", block.prev_hash)
             nonce = self.proof_of_work(block) #where actual "mining" happens, it finds the nonce of the block
             block.nonce = nonce
             self.update_merkel_root()
@@ -280,6 +302,10 @@ class Blockchain:
     def verify_PoW_singlePass(self, block: Block) -> bool:
         # hash = block.hash_block()
         # guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
+        if block.hash == "xite":
+            return True
+
+        debug_log("Previous hash in verify_PoW_singlePass: ", block.prev_hash)
         guess = f"{block.hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
@@ -426,7 +452,7 @@ class User:
 
         self.wallet['net_amount'] = balance
 
-        with open(self.name + "_wallet.json", 'w') as f:
+        with open(self.wallet_name, 'w') as f:
             json.dump(self.wallet, f, indent = 4)
 
         # for block in self.blockchain.chain: 
@@ -480,6 +506,7 @@ class User:
 
         """
         self.update_balance()
+        self.blockchain.update_prev_hash()
         if reward > 0:
             self.amount += reward
             self.message = f"{self.name} mined a block and got {reward} $XITE"
@@ -520,6 +547,20 @@ class User:
             return transaction_data
         if return_block:
             return new_block.to_dict()
+
+    @staticmethod    
+    def update_wallet_through_blockchain(user, reset: bool = False):
+        if reset:
+            user.wallet['net_amount'] = 10
+            user.wallet['history'] = []
+            with open(user.wallet_name, 'w') as f:
+                json.dump(user.wallet, f, indent = 4)
+            user.update_wallet()
+        for block in user.blockchain.chain:
+            if block.data.sender.name == user.name and block.data.recipient.name != user.name:
+                user.save_to_wallet(-block.data.amount, block.data.recipient.name, block.data.sender.name)
+            if block.data.recipient.name == user.name and block.data.sender.name != user.name:
+                user.save_to_wallet(block.data.amount, block.data.recipient.name, block.data.sender.name)
             
 
         

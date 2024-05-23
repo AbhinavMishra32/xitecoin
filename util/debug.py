@@ -24,7 +24,7 @@ def debug_log(*args, env="prod", **kwargs):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             debug_info = f"[LOG] [{timestamp}] {filename}::{func_name} (line {line_num}):"
             message = ' '.join(map(str, args))
-            log_message = f"{debug_info} {message}\n"
+            log_message = f"{debug_info} {message}"
 
             # Print to console safely
             safe_print(colored(log_message, 'yellow'))
@@ -37,7 +37,7 @@ def debug_log(*args, env="prod", **kwargs):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             debug_info = f"[LOG] [{timestamp}] {filename}::{func_name} (line {line_num}):"           
             message = ' '.join(map(str, args))
-            log_message = f"{debug_info} {strip_color(message)}\n"  # Strip color codes
+            log_message = f"{debug_info} {strip_color(message)}"  # Strip color codes
 
             # Write to log file
             with open(LOG_FILE, "a") as f:
