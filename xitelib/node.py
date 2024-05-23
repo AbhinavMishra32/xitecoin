@@ -49,8 +49,9 @@ class Data:
     def __str__(self):
         return self.message
 class Block:
-    def __init__(self, data: Data, nonce: int = 0, prev_hash = "", hash = None, timestamp = None):
+    def __init__(self, data: Data, nonce: int = 0, prev_hash: str = "", hash = None, timestamp = None):
         self.merkel_root = ""
+        self.added_to_bc = False
         # if prev_hash is None:
         #     self.prev_hash = ""
         # else:
@@ -63,10 +64,15 @@ class Block:
         self.nonce = nonce
         if data.sender.name == "Genesis":
                 self.hash = "xite"
-        elif hash is None:
-            self.hash = self.hash_block()
-        else:
+        # elif hash is None:
+        #     self.hash = self.hash_block()
+        # else:
+        #     self.hash = hash
+        if hash:
             self.hash = hash
+        else:
+            self.hash = self.hash_block() 
+            
 
         debug_log("Previous hash while initializing Block: ", self.prev_hash)
 
@@ -79,7 +85,7 @@ class Block:
     def to_dict(self):
         return {
             'prev_hash': self.prev_hash,
-            'hash':self.hash,
+            'hash':self.hash if self.hash != "xite" else "",
             'data': self.data.transaction,
             'timestamp': self.timestamp,
             'nonce': self.nonce,
@@ -87,7 +93,7 @@ class Block:
 
     def hash_block(self) -> str:
         if HASH_WITHOUT_TIMESTAMP:
-            if self.prev_hash == "":
+            if self.prev_hash == "" and self.data.sender.name != "Genesis" and self.added_to_bc:
                 raise InvalidBlockchainException("Previous hash is empty while hashing!")
             data_string = f"{self.data.sender.name}{self.data.amount}{self.data.recipient.name}{self.data.message}{self.prev_hash}{self.merkel_root})"
             # debug_log("Data string: ", data_string)
@@ -134,6 +140,12 @@ class Blockchain:
         if init_load:
             self.load_blockchain()
 
+    def append(self, block: Block):
+        block.hash = block.hash_block()
+        block.added_to_bc = True
+        if self.update_prev_hash():
+            debug_log(f"Previous hash of {block} updated in Blockchain.append!")
+            self.chain.append(block)
 
     # gives the merkel root to each block
     def update_merkel_root(self):
@@ -164,7 +176,7 @@ class Blockchain:
             block.prev_hash = self.chain[self.chain.index(block)-1].hash
             debug_log(f"Previous hash updated to: {block.prev_hash}, for block: {block}")
             return True
-    
+
     def verify_prev_hash(self) -> bool:
         for block in self.chain:
             if block.prev_hash != self.chain[self.chain.index(block)-1].hash:
@@ -201,15 +213,16 @@ class Blockchain:
                     timestamp = block['timestamp']
                     # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
                     new_block = Block(data, block['nonce'], timestamp = timestamp)
-                    if len(self.chain) > 0:
-                        if new_block.prev_hash != self.chain[-1].hash:
-                            new_block.prev_hash = self.chain[-1].hash
-                            debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
 
                     if new_block.data.sender.name != "Genesis":
                         new_block.hash = new_block.hash_block()
                         debug_log("prev_hash added in load_blockchain: ", new_block.prev_hash)
                     
+                    if len(self.chain) > 0:
+                        if new_block.prev_hash != self.chain[-1].hash:
+                            new_block.prev_hash = self.chain[-1].hash
+                            debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
+
                     self.chain.append(new_block)
                     # debug_log(f"LOADED BLOCK: {block}")
                 if len(self.chain) == 0:
@@ -511,7 +524,10 @@ class User:
             self.amount += reward
             self.message = f"{self.name} mined a block and got {reward} $XITE"
             transaction_data = Data(self, recipient, amount, self.message)
+            prev_hash = self.blockchain.chain[-1].hash
             new_block = Block(transaction_data)
+            new_block.prev_hash = prev_hash
+            # debug_log("prev_hash in User.transaction: ", prev_hash)
             if save:
                 if self.blockchain.verify_block_signature(new_block):
                     self.blockchain.add_block(new_block)
@@ -537,6 +553,9 @@ class User:
         # transaction_hash = hashlib.sha256(self.message.encode()).hexdigest()
 
         new_block = Block(transaction_data) #* gives current transaction data's hash to the current block but add_block() method automatically gives the hash of the current block to the next block. (or current block has previous block's hash)
+        prev_hash = self.blockchain.chain[-1].hash
+        new_block.prev_hash = prev_hash
+        new_block.hash = new_block.hash_block()
         if save:
             if self.blockchain.verify_block_signature(new_block):
                 self.blockchain.add_block(new_block)

@@ -1,9 +1,11 @@
 from pydoc import cli
 import socket
 import threading
+import trace
 import traceback
 
 from annotated_types import T
+from util import debug
 from xitelib.node import Blockchain, InvalidTransactionException, User, Block, Data
 from xite_network.xiteuser import XiteUser, add_block_to_buffer, make_node_block
 import sys
@@ -134,15 +136,13 @@ def cl_handle_json(client, data: dict):
             #     debug_log("Block added to blockchain without mining as it already has a nonce")
             #     # debug_log("Now syncing bc as latest transaction was from XiteNetwork")
             #     # sync_bc()
-            debug_log(colored("BEFORE WALLET THING", 'red'))
-            debug_log(colored(data, 'red'))
 
 
             if MINE:
                 # if not block.is_mined(): # block isnt mined yet
                 if data["data"]["nonce"] == 0:
                     debug_log(colored("Block not mined yet", attrs=['bold'], color='light_red', on_color='on_white'))
-                    add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user))
+                    add_block_to_buffer(TRANSACTION_BUFFER, make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash']))
                     debug_log(colored("Transaction buffer:", attrs=['bold'], on_color='on_black'))
                     i = 0
                     for transaction in TRANSACTION_BUFFER:
@@ -292,7 +292,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
             debug_log("Blockchain data sent to client: ")
             # debug_log(blockchain)
 
-def make_block(recipient: str, amount: int):
+def make_block(recipient: str, amount: int, prev_hash = None):
     recp_user = User(recipient,client_user.blockchain)
     try:
         return client_user.nwtransaction(recp_user, amount, save = False, return_as_json = True)
@@ -331,8 +331,9 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
     debug_log(t, 'magenta')
     if chain_length > 0:
         prev_hash = t.chain[-1].hash
+        block = make_block(recipient, amount)
         debug_log(f"Previous hash: {prev_hash}")
-        send_data = make_json(data = make_block(recipient, amount), action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
+        send_data = make_json(data = block, action = "BC_TRANSACTION_DATA", sender = client_user.username, prev_hash = prev_hash)
         send_data = json.loads(send_data)  # Convert send_data to a dictionary
         send_data["data"]["data"]["chain_length"] = chain_length
         debug_log(colored(send_data, "yellow"))
@@ -379,7 +380,8 @@ def console_cli(client_user: XiteUser):
         print("1. Check balance")
         print("2. Check blockchain length")
         print("3. Make transaction")
-        print("4. Exit")
+        print("4. Print blockchain")
+        print("5. Exit")
         choice = input("Enter choice: ")
         if choice == '1':
             print("Checking balance...")
@@ -394,6 +396,9 @@ def console_cli(client_user: XiteUser):
             if xc_transaction(recipient, amount, client_user.blockchain):
                 print("Transaction successful")
         elif choice == '4':
+            print("Printing blockchain...")
+            print(client_user.blockchain)
+        elif choice == '5':
             client.close()
             print("Exiting...")
             quit()
@@ -406,6 +411,8 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
         debug_log("Checking blockchain length before making transaction...")
         check_bc_len(bc)
         chain_len_status()
+        # bc.update_prev_hash()
+        # print(bc)
         if xc.verify_blockchain():
             debug_log(colored("Blockchain verification successful before transaction", 'green'))
             make_transaction(recipient, amount, client_user.blockchain)
@@ -415,6 +422,7 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
             raise Exception("Blockchain verification failed")
     except Exception as e:
         debug_log(colored(f"Error occurred during transaction: {e}", 'red'))
+        traceback.print_exc()
         return False
 
 
@@ -561,6 +569,9 @@ def main(client_user: XiteUser, client: socket.socket):
 
     debug_log("printing LONGEST_CHAIN_LENGTH :-")
     debug_log(LONGEST_CHAIN_LENGTH)
+    client_user.blockchain.update_prev_hash()
+    debug_log("Blockchain before starting threads:")
+    debug_log(colored(client_user.blockchain, 'cyan'))
     write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
     write_thread.start()
     receive_thread = threading.Thread(target=recv_msg)

@@ -5,6 +5,7 @@ import json
 from termcolor import colored
 import threading
 from util.debug import debug_log
+from typing import Optional
 BLOCKCHAIN_NAME = Settings.BLOCKCHAIN_NAME.value
 
 class BlockMiningFailedException(Exception):
@@ -207,7 +208,7 @@ class XiteUser(User):
 def add_block_to_buffer(buffer_list, block: Block):
     buffer_list.append(block.to_dict())
 
-def make_node_block(json_data: dict, client_user, prev_hash = None, hash = None) -> Block:
+def make_node_block(json_data: dict, client_user, prev_hash: Optional[str] = None, hash = None) -> Block:
 
     sender = json_data["data"]["data"].get("sender_name")
     if sender is None:
@@ -222,7 +223,7 @@ def make_node_block(json_data: dict, client_user, prev_hash = None, hash = None)
     timestamp = json_data["data"].get("timestamp")
     node_data = Data(sender_user, recp_user, amount, message, timestamp=timestamp)
     nonce = int(json_data["data"].get("nonce"))
-    node_block = Block(node_data, nonce, prev_hash, hash)
+    node_block = Block(node_data, nonce, prev_hash = prev_hash, hash = hash) #type:ignore
     return node_block
 
 
