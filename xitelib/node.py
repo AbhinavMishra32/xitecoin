@@ -22,6 +22,7 @@
 from datetime import datetime
 import hashlib
 import json
+import traceback
 import rsa
 # from settings.settings import Settings
 import time
@@ -208,7 +209,10 @@ class Blockchain:
             try:
                 self.chain = []
                 with open(self.file_path, 'r') as f:
-                    blockchain_data = json.load(f)
+                    blockchain_data = f.read()
+                if not blockchain_data:
+                    return False
+                blockchain_data = json.loads(blockchain_data)
                 for index, block in enumerate(blockchain_data):
                     sender = User(block['data']['sender_name'], self)
                     recipient = User(block['data']['recipient_name'], self)
@@ -220,9 +224,17 @@ class Blockchain:
                 if len(self.chain) == 0:
                     return False
                 return True
+            except FileNotFoundError:
+                debug_log(f"Blockchain file not found at {self.file_path}", env="dev")
+                return False
+            except json.JSONDecodeError:
+                debug_log(f"Failed to decode blockchain file at {self.file_path}", env="dev")
+                return False
             except Exception as e:
                 debug_log(f"Failed to load blockchain: {e}", env="dev")
+                traceback.print_exc()
                 return False
+        
         if initialize_blockchain():
             debug_log(f"Blockchain loaded from {self.file_path}")
             return True

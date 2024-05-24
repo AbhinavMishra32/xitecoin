@@ -28,7 +28,7 @@ def debug_log(*args, env="prod", **kwargs):
             log_message = f"{debug_info} {message}"
 
             # Print to console safely
-            safe_print(colored(log_message, 'yellow'))
+            safe_print(log_message)
             if dev_save:
                 log_message = f"{debug_info} {strip_color(message)}\n"
                 if not os.path.exists(LOG_FILE):

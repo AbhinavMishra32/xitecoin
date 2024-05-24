@@ -1,3 +1,4 @@
+from os import sync
 from pydoc import cli
 import socket
 from tabnanny import check
@@ -126,7 +127,7 @@ def cl_handle_json(client, data: dict):
                 # sync_bc()
 
         elif action == "BC_TRANSACTION_DATA":
-            # check_bc_len(client_user.blockchain)
+            check_bc_len(client_user.blockchain)
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
             debug_log(colored(f"Block data before mining: {block}", 'yellow'))
             # debug_log(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
@@ -158,7 +159,7 @@ def cl_handle_json(client, data: dict):
                         debug_log("--------------------")
                     debug_log(colored(f"BUFFER SIZE: {len(TRANSACTION_BUFFER)}", attrs=['bold']))
                     #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
-                    client_user.blockchain.load_blockchain()
+                    # client_user.blockchain.load_blockchain()
 
                     # if client_user.blockchain.chain[-1].hash == data["prev_hash"]: #add later for more security
                     #     debug_log(colored("Previous hash matches with the last block in the blockchain", 'green'))
@@ -188,7 +189,8 @@ def cl_handle_json(client, data: dict):
                             debug_log(colored("Adding to wallet, sender is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(-data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
                             debug_log("Now syncing bc as latest transaction was from client user")
-                            # sync_bc()
+                            check_bc_len(client_user.blockchain)
+                            sync_bc()
                         elif data['data']['data'].get("recipient_name", KeyError("recipient_name not found")) == client_user.username:
                             debug_log(colored('IN RECIPIENT_NAME THING', 'yellow'))
                             #block is already mined
@@ -201,7 +203,8 @@ def cl_handle_json(client, data: dict):
                             # debug_log("Block added to blockchain without mining as it already has a nonce")
                             debug_log(colored("Adding to wallet, receiver is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
-                            # sync_bc()
+                            check_bc_len(client_user.blockchain)
+                            sync_bc()
 
                         # client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
 
@@ -381,6 +384,7 @@ def chain_len_status():
     else:
         debug_log(colored("Blockchain is not up to date", 'red'))
         debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'red'))
+        sync_bc()
 
 def check_bc_len(bc:Blockchain) -> bool:
     """
@@ -429,12 +433,10 @@ def console_cli(client_user: XiteUser):
 def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
     try:
         debug_log("Checking blockchain length before making transaction...")
-        # check_bc_len(bc)
+        check_bc_len(bc)
         chain_len_status()
         debug_log(f"Blockchain length before sync_bc(): {len(bc)}")
-        # sync_bc()
-        # bc.update_prev_hash()
-        # print(bc)
+        sync_bc()
         if xc.verify_blockchain():
             debug_log(colored("Blockchain verification successful before transaction", 'green'))
             make_transaction(recipient, amount, client_user.blockchain)
@@ -443,6 +445,7 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
             return True
         else:
             debug_log("Error occurred while verifying blockchain")
+            sync_bc()
             raise Exception("Blockchain verification failed\n",
                             f"Blockchain: {bc}")
     except Exception as e:
