@@ -24,10 +24,10 @@ def broadcast(message):
     try:
         for client_socket in clients:
             client_socket.send(message)
-            safe_print(colored(f"Message sent to {nicknames[client_socket]}", 'green'))
+            debug_log(colored(f"Message sent to {nicknames[client_socket]}", 'green'))
         return message.decode()
     except Exception as e:
-        safe_print(f"Error occurred while broadcasting: {e}")
+        debug_log(f"Error occurred while broadcasting: {e}")
 
 
 def safe_print(text):
@@ -61,10 +61,10 @@ def handle(client: socket.socket):
                     # No more complete JSON objects in the buffer
                     break
         except json.JSONDecodeError as e:
-            safe_print(colored(f"Error occurred while decoding json: {e}", 'red', attrs=['bold']))
+            debug_log(colored(f"Error occurred while decoding json: {e}", 'red', attrs=['bold']))
         except Exception as e:
-            safe_print(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
-            safe_print(data)
+            debug_log(f"Error occurred in : \033[1;32;40m handle \033[m {e}")
+            debug_log(data)
             traceback.print_exc()
             if client.fileno() == -1:
                 break
@@ -80,8 +80,8 @@ def get_latest_bc_dict(c_len_dict: dict) -> tuple:
 
 def handle_choice(client: socket.socket, data):
     try:
-        safe_print(colored(f"[CLIENT]: {data}", 'cyan'))
-        safe_print(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
+        debug_log(colored(f"[CLIENT]: {data}", 'cyan'))
+        debug_log(colored(f"ACTION: {data['action']}", 'yellow','on_black', ['bold']))
         actions = ['SENDER_NAME', 'SEND_BC', 'BC_TRANSACTION_DATA', 'SYNC_BC', 'CHECK_BC_LEN', 'WANT_BC', 'GIVE_BC']
 
         # if data["action"] != "SENDER_NAME":
@@ -102,16 +102,16 @@ def handle_choice(client: socket.socket, data):
                         del nicknames[old_client]
                 # Add the new client, regardless of whether an old client was found
                 nicknames[client] = nickname
-                safe_print(f"{nickname} added to clients list")
+                debug_log(f"{nickname} added to clients list")
 
                 clients.append(client)
                 nickname_list= []
                 for _ in nicknames:
                     nickname_list.append(nicknames[_])
-                safe_print(colored(f"NICKNAMES: {nickname_list}", 'yellow'))  # Moved inside the else block
-                safe_print(colored(f"NO. OF CLIENTS: {len(clients)}", 'yellow'))
+                debug_log(colored(f"NICKNAMES: {nickname_list}", 'yellow'))  # Moved inside the else block
+                debug_log(colored(f"NO. OF CLIENTS: {len(clients)}", 'yellow'))
         except Exception as e:
-            safe_print(f"Error occurred while appending client to clients list: {type(e).__name__}, {e.args}")
+            debug_log(f"Error occurred while appending client to clients list: {type(e).__name__}, {e.args}")
         client.send(json.dumps({"[Message from Server] Connected to the server": ""}).encode())
         if data["action"] == "SEND_BC":
             client.send(json.dumps({"Ok, send the blockchain" : ""}).encode())
@@ -123,20 +123,20 @@ def handle_choice(client: socket.socket, data):
         if data["action"] == "BC_TRANSACTION_DATA":
             ch_len_dict[data["sender"]] = data["data"]["data"]["chain_length"]
             debug_log(f"CHAIN DICT: {ch_len_dict}")
-            safe_print("broadcasting the json, action: BC_TRANSACTION_DATA :-")
+            debug_log("broadcasting the json, action: BC_TRANSACTION_DATA :-")
             broadcast(json.dumps(data).encode())
         if data["action"] == "SYNC_BC":
-            safe_print("broadcasting json for synchronizing blockchain")
+            debug_log("broadcasting json for synchronizing blockchain")
             broadcast(json.dumps(data).encode())
 
         if data["action"] == "CHECK_BC_LEN":
             debug_log("in CHECK_BC_LEN action")
-            safe_print("Checking blockchain length")
-            safe_print(f"MAX CHAIN LENGTH: {max(ch_len_dict.values())}")
+            debug_log("Checking blockchain length")
+            debug_log(f"MAX CHAIN LENGTH: {max(ch_len_dict.values())}")
             max_len, max_name = get_latest_bc_dict(ch_len_dict)
-            safe_print(f"CHAIN LENGTH DICT: {ch_len_dict}")
-            safe_print(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
-            safe_print("broadcasting the json from CHECK_BC_LEN action...")
+            debug_log(f"CHAIN LENGTH DICT: {ch_len_dict}")
+            debug_log(f"MAX LENGTH: {max_len}, MAX NAME: {max_name}")
+            debug_log("broadcasting the json from CHECK_BC_LEN action...")
             sender_client: socket.socket = next((c for c in clients if nicknames[c] == data["sender"]), None) #type: ignore
             sender_client.send(json.dumps({"action": "C_LEN_BROADCAST", "data": {"chain_length": max_len, "reciever": data["sender"], "lgt_c_name": max_name}}).encode())
             # now broadcasting to the client having the max length to give their chain
@@ -148,25 +148,25 @@ def handle_choice(client: socket.socket, data):
             pass
 
         if data["action"] == "WANT_BC":
-            safe_print("broadcasting the json from WANT_BC action...")
+            debug_log("broadcasting the json from WANT_BC action...")
             broadcast(json.dumps(data).encode())
         
         if data["action"] == "GIVE_BC":
-            safe_print("broadcasting the json")
+            debug_log("broadcasting the json")
             broadcast(json.dumps(data).encode())
 
         if data["action"] == "MINE_STATUS":
            pass 
 
         if data["action"] not in actions:
-            safe_print(colored("No valid action specified, so here is the original json:", 'light_red'))
-            safe_print(colored(data, 'light_red'))
+            debug_log(colored("No valid action specified, so here is the original json:", 'light_red'))
+            debug_log(colored(data, 'light_red'))
             debug_log("broadcasting the json, action: None")
             broadcast(json.dumps(data).encode())
     
     except Exception as e:
-        safe_print(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
-        safe_print("Faulty action:" + colored(data, 'red'))
+        debug_log(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
+        debug_log("Faulty action:" + colored(data, 'red'))
         traceback.print_exc()
         # index = clients.index(client)
         # clients.remove(client)
@@ -183,20 +183,20 @@ def recieve():
             if client not in clients:
                 thread = threading.Thread(target = handle, args = (client,))
                 thread.start()
-                safe_print(colored(f"Handle thread started", attrs=['bold']))
+                debug_log(colored(f"Handle thread started", attrs=['bold']))
             # data = client.recv(10024).decode()
             # if data:  # Add this line     
                 # print(f"Connected with {str(address)}")
                 # print("starting handle thread")
     except Exception as e:
-        safe_print(f"Error occurred: {e}")
+        debug_log(f"Error occurred: {e}")
         traceback.print_exc()
 
 if __name__ == "__main__":
-    safe_print(colored('''
+    print(colored('''
                   
 ▀▄▀ █ ▀█▀ █▀▀ █▀▀ █▀█ █ █▄░█
 █░█ █ ░█░ ██▄ █▄▄ █▄█ █ █░▀█
 ''', 'cyan'))
-    safe_print(colored("Xitecoin server started...", 'green'))
+    print(colored("Xitecoin server started...", 'green'))
     recieve()

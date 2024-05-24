@@ -1,3 +1,4 @@
+from re import M
 from xitelib.node import Blockchain, Data, User, Block
 from settings.settings import Settings
 import sqlite3
@@ -188,7 +189,9 @@ class XiteUser(User):
 
                     success = True
                 else:
-                    raise BlockVerifyError("Incoming Block verification failed")
+                    raise BlockVerifyError(f"Incoming Block verification failed:\n"
+                                           f"Mined Block: {mined_block} \n"
+                                           f"Incoming Block: {block}")
                 # XiteUser.verify_blockchain(user)
             except BlockMiningFailedException:
                 print(colored("Block mining failed", 'light_red'))
@@ -224,6 +227,10 @@ def make_node_block(json_data: dict, client_user, prev_hash: Optional[str] = Non
     node_data = Data(sender_user, recp_user, amount, message, timestamp=timestamp)
     nonce = int(json_data["data"].get("nonce"))
     node_block = Block(node_data, nonce, prev_hash = prev_hash, hash = hash) #type:ignore
+    if json_data["data"].get("prev_hash") is not None:
+        prev_hash = json_data["data"]["prev_hash"]
+        if prev_hash is not None:
+            node_block.prev_hash = prev_hash
     return node_block
 
 

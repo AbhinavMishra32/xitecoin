@@ -24,7 +24,7 @@ client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 try:
     client.connect(("localhost", 50000))
 except ConnectionRefusedError as e:
-    debug_log(colored(f"Server not started!", 'red'), env="dev")
+    debug_log(colored(f"Server currently offline. Please try again later", 'red'), env="dev")
     sys.exit(1)
 
 nicknames = []
@@ -91,14 +91,15 @@ def cl_handle_json(client, data: dict):
             global LONGEST_CHAIN_LENGTH
             LONGEST_CHAIN_CLIENT_NAME = data["data"]["lgt_c_name"]
             LONGEST_CHAIN_LENGTH = chain_length
+
             if chain_length > len(client_user.blockchain):
                 global IS_LONGEST_CHAIN
                 IS_LONGEST_CHAIN = False
-                debug_log("There is a longer blockchain available. Requesting blockchain update.")
+                # debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # sync_bc(client, data, client_user.username, recv = True) #this function here wont work as the data is this: {'action': 'C_LEN_BROADCAST', 'data': {'chain_length': 21, 'reciever': 'Abhinav2', 'lgt_c_name': 'Abhinav1'}}, we need the blockchain data to recieve, not the chain length broadcast data
                 # client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
-                sync_bc()
+                # sync_bc()
 
             elif chain_length <= len(client_user.blockchain):
                 IS_LONGEST_CHAIN = True
@@ -107,11 +108,10 @@ def cl_handle_json(client, data: dict):
                 # req_bc_update(client_user.username)
 
         if action == "WANT_BC" and data["sender"] == client_user.username:
-            debug_log("INSIDE WANT_BC ACTION")
+            # debug_log("INSIDE WANT_BC ACTION")
             # the person wants the blockchain, so we send it to them because sender is our username, we are sending it to the "reciever" client
-            process_sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
-            #now we will send bc with GIVE_BC action
-            # client.send(json.dumps({"action": "SEND_BC", "sender": client_user.username, "reciever": data["reciever"]}).encode())
+            if bool(data["Force"]) or not IS_LONGEST_CHAIN:
+                process_sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
 
         if action == "GIVE_BC" and data["reciever"] == client_user.username:
             debug_log("Received latest blockchain from server")
@@ -121,13 +121,14 @@ def cl_handle_json(client, data: dict):
             try:
                 process_sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
             except:
-                sync_bc()
+                sync_bc(force = True)
 
         elif action == "BC_TRANSACTION_DATA":
             # check_bc_len(client_user.blockchain)
             block = make_node_block(data, client_user, data["prev_hash"], hash = data['data']['hash'])
-            debug_log(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
-            debug_log(colored(f"Block hash: {block.hash}", 'yellow'))
+            debug_log(colored(f"Block data before mining: {block}", 'yellow'))
+            # debug_log(colored(f"Block prev_hash: {block.prev_hash}", 'yellow'))
+            # debug_log(colored(f"Block hash: {block.hash}", 'yellow'))
             # if data["data"]["data"]["sender_name"] == "XiteNetwork" and data["data"]["data"]["recipient_name"] == client_user.username:
             #     debug_log(colored("Block sender is XiteNetwork, ignoring block", 'yellow'))
             #     block = make_node_block(data, client_user)
@@ -157,6 +158,10 @@ def cl_handle_json(client, data: dict):
                     #TODO: check if recieving block's prev hash matches the hash of the last block in the local blockchain
                     client_user.blockchain.load_blockchain()
 
+                    # if client_user.blockchain.chain[-1].hash == data["prev_hash"]: #add later for more security
+                    #     debug_log(colored("Previous hash matches with the last block in the blockchain", 'green'))
+                    #     debug_log(colored("Now mining block...", 'yellow'))
+                    data["data"]["data"]["prev_hash"] = block.prev_hash
                     debug_log(colored("NOW MINING BLOCK: ", 'yellow', attrs=['bold']))
                     if XiteUser.process_mined_block(data, client_user, use_multithreading=False, client_user=client_user):
                         # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
@@ -250,7 +255,7 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     return json.dumps(json_data)
         
 def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = False, process = False):
-    debug_log("INSIDE SYNC_BC FUNCTION")
+    # debug_log("INSIDE SYNC_BC FUNCTION")
     #process is false when we are just broadcasting that we want the blockchain
     #process is true when we get the blockchain data also and now we will process it
     if recv:
@@ -353,9 +358,10 @@ def req_bc_update(rec_name: str):
     client.send(json.dumps({"action": "UPDATE_BC", "sender": rec_name}).encode())
 
 
-def sync_bc():
+def sync_bc(force = False):
     # actual function with sync logic in process_sync_bc
-    client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
+
+    client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username, "Force": "True"}).encode())
 
 def chain_len_status():
     if IS_LONGEST_CHAIN:
@@ -368,13 +374,15 @@ def chain_len_status():
 def check_bc_len(bc:Blockchain) -> bool:
     """
     Returns a bool value indicating whether the blockchain is the longest chain or not.
-    uses the CHECK_BC_LEN action to check the length of the blockchain
+    uses the CHECK_BC_LEN action to check the length of the blockchain.
+    
+    Does NOT update the blockchain, only updates the length to the longest chain length.
     """
     debug_log("INSIDE CHECK_BC_LEN FUNCTION")
     client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "reciever": "server", "chain_length": len(bc)}).encode())
     return IS_LONGEST_CHAIN
 
-def console_cli(client_user: XiteUser):
+def console_cli(client_user: XiteUser): 
     while True:
         print("---------XITECOIN---------")
         print("1. Check balance")
@@ -411,6 +419,7 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
         debug_log("Checking blockchain length before making transaction...")
         check_bc_len(bc)
         chain_len_status()
+        sync_bc()
         # bc.update_prev_hash()
         # print(bc)
         if xc.verify_blockchain():
@@ -419,7 +428,8 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
             return True
         else:
             debug_log("Error occurred while verifying blockchain")
-            raise Exception("Blockchain verification failed")
+            raise Exception("Blockchain verification failed\n",
+                            f"Blockchain: {bc}")
     except Exception as e:
         debug_log(colored(f"Error occurred during transaction: {e}", 'red'))
         traceback.print_exc()
@@ -569,7 +579,7 @@ def main(client_user: XiteUser, client: socket.socket):
 
     debug_log("printing LONGEST_CHAIN_LENGTH :-")
     debug_log(LONGEST_CHAIN_LENGTH)
-    client_user.blockchain.update_prev_hash()
+    # client_user.blockchain.update_prev_hash()
     debug_log("Blockchain before starting threads:")
     debug_log(colored(client_user.blockchain, 'cyan'))
     write_thread = threading.Thread(target=write, args=(client_user.blockchain,))
@@ -585,4 +595,5 @@ if __name__ == "__main__":
     xc = Blockchain(f"xc_{username}", init_load = True)
 
     client_user = XiteUser(username, password, xc)
+    client_user.blockchain.load_blockchain()
     main(client_user, client)

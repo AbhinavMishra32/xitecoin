@@ -1,14 +1,26 @@
 [
     {
         "prev_hash": "",
-        "hash": "",
+        "hash": "xite",
         "data": {
             "sender_name": "Genesis",
             "recipient_name": "Genesis",
             "amount": 0,
             "message": "Genesis Block"
         },
-        "timestamp": "24/05/2024 00:54:30",
+        "timestamp": "24/05/2024 20:53:33",
         "nonce": 32
+    },
+    {
+        "prev_hash": "xite",
+        "hash": "fa17fc91592aa7a899afcec0e0cde15044af2bcb68982f0dfd8e8ff8cd5d58e8",
+        "data": {
+            "sender_name": "Abhinav1",
+            "recipient_name": "d",
+            "amount": 0,
+            "message": "Abhinav1 gave d 0 $XITE"
+        },
+        "timestamp": "24/05/2024 20:53:45",
+        "nonce": 72973
     }
 ]
