@@ -1,5 +1,6 @@
 from pydoc import cli
 import socket
+from tabnanny import check
 import threading
 import trace
 import traceback
@@ -95,6 +96,7 @@ def cl_handle_json(client, data: dict):
             if chain_length > len(client_user.blockchain):
                 global IS_LONGEST_CHAIN
                 IS_LONGEST_CHAIN = False
+                sync_bc()
                 # debug_log("There is a longer blockchain available. Requesting blockchain update.")
                 #now that we know there is a longer chain available, we request the blockchain from the sender
                 # sync_bc(client, data, client_user.username, recv = True) #this function here wont work as the data is this: {'action': 'C_LEN_BROADCAST', 'data': {'chain_length': 21, 'reciever': 'Abhinav2', 'lgt_c_name': 'Abhinav1'}}, we need the blockchain data to recieve, not the chain length broadcast data
@@ -107,11 +109,10 @@ def cl_handle_json(client, data: dict):
             chain_len_status()
                 # req_bc_update(client_user.username)
 
-        if action == "WANT_BC" and data["sender"] == client_user.username:
+        if action == "WANT_BC" and data["sender"] == client_user.username and data["reciever"] != client_user.username:
             # debug_log("INSIDE WANT_BC ACTION")
             # the person wants the blockchain, so we send it to them because sender is our username, we are sending it to the "reciever" client
-            if bool(data["Force"]) or not IS_LONGEST_CHAIN:
-                process_sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
+            process_sync_bc(client, data, reciever = data.get("reciever", KeyError("No sender found in WANT_BC action")), send = True)
 
         if action == "GIVE_BC" and data["reciever"] == client_user.username:
             debug_log("Received latest blockchain from server")
@@ -120,8 +121,9 @@ def cl_handle_json(client, data: dict):
             debug_log("Now starting sync_bc function with recv = True and process = True")
             try:
                 process_sync_bc(client, data, reciever = data.get("sender", KeyError("No sender found in GIVE_BC action")), recv = True, process = True)
-            except:
-                sync_bc(force = True)
+            except Exception as e:
+                debug_log(f"Error occurred while in GIVE_BC action: {e}")
+                # sync_bc()
 
         elif action == "BC_TRANSACTION_DATA":
             # check_bc_len(client_user.blockchain)
@@ -167,6 +169,10 @@ def cl_handle_json(client, data: dict):
                         # LOGIC FOR GIVING SOME REWARD FOR MINING BLOCK
                         t = Blockchain(client_user.blockchain.name)
                         t.load_blockchain()
+                        client_user.blockchain = t
+                        debug_log(f"client_user blockchain after mining: {client_user.blockchain}")
+                        # debug_log(f"Blockchain after mining block: {t}")
+                        # check_bc_len(client_user.blockchain)
                         chain_length = len(t.chain)
                         prev_hash = t.chain[-1].hash
                         debug_log(f"Previous hash: {prev_hash}")
@@ -182,7 +188,7 @@ def cl_handle_json(client, data: dict):
                             debug_log(colored("Adding to wallet, sender is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(-data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
                             debug_log("Now syncing bc as latest transaction was from client user")
-                            sync_bc()
+                            # sync_bc()
                         elif data['data']['data'].get("recipient_name", KeyError("recipient_name not found")) == client_user.username:
                             debug_log(colored('IN RECIPIENT_NAME THING', 'yellow'))
                             #block is already mined
@@ -195,7 +201,7 @@ def cl_handle_json(client, data: dict):
                             # debug_log("Block added to blockchain without mining as it already has a nonce")
                             debug_log(colored("Adding to wallet, receiver is client user", 'yellow', attrs=['bold']))
                             client_user.save_to_wallet(data['data']['data']['amount'], data['data']['data']['recipient_name'], data['sender'])
-                            sync_bc()
+                            # sync_bc()
 
                         # client.send(json.dumps({"action": "MINE_STATUS", "sender": client_user.username}))
 
@@ -343,6 +349,8 @@ def make_transaction(recipient: str, amount: int, blockchain: Blockchain):
         send_data["data"]["data"]["chain_length"] = chain_length
         debug_log(colored(send_data, "yellow"))
         client.send(json.dumps(send_data).encode())
+        debug_log(f"""BLOCKCHAIN LENGTH AFTER TRANSACTION: {len(t)}\n
+                  Blockchain: {t}""")
     debug_log(colored("Sent transaction data", 'green'))
     # client_user.save_to_wallet(-amount, recipient, client_user.username)
 
@@ -358,15 +366,15 @@ def req_bc_update(rec_name: str):
     client.send(json.dumps({"action": "UPDATE_BC", "sender": rec_name}).encode())
 
 
-def sync_bc(force = False):
-    # actual function with sync logic in process_sync_bc
+def sync_bc():
+    # actual function with sync logic in process_sync_bc()
 
-    client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username, "Force": "True"}).encode())
+    client.send(json.dumps({"action" :  "WANT_BC", "sender" : LONGEST_CHAIN_CLIENT_NAME, "reciever":client_user.username}).encode())
 
 def chain_len_status():
     if IS_LONGEST_CHAIN:
         debug_log(colored("Blockchain is up to date", 'green'))
-        debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'green'))
+        debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH} [Client]", 'green'))
     else:
         debug_log(colored("Blockchain is not up to date", 'red'))
         debug_log(colored(f"Length of longest blockchain: {LONGEST_CHAIN_LENGTH}", 'red'))
@@ -379,6 +387,7 @@ def check_bc_len(bc:Blockchain) -> bool:
     Does NOT update the blockchain, only updates the length to the longest chain length.
     """
     debug_log("INSIDE CHECK_BC_LEN FUNCTION")
+    bc.load_blockchain()
     client.send(json.dumps({"action": "CHECK_BC_LEN", "sender": client_user.username, "reciever": "server", "chain_length": len(bc)}).encode())
     return IS_LONGEST_CHAIN
 
@@ -417,14 +426,17 @@ def console_cli(client_user: XiteUser):
 def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
     try:
         debug_log("Checking blockchain length before making transaction...")
-        check_bc_len(bc)
+        # check_bc_len(bc)
         chain_len_status()
-        sync_bc()
+        debug_log(f"Blockchain length before sync_bc(): {len(bc)}")
+        # sync_bc()
         # bc.update_prev_hash()
         # print(bc)
         if xc.verify_blockchain():
             debug_log(colored("Blockchain verification successful before transaction", 'green'))
             make_transaction(recipient, amount, client_user.blockchain)
+
+            check_bc_len(bc)
             return True
         else:
             debug_log("Error occurred while verifying blockchain")

@@ -74,7 +74,7 @@ class Block:
             self.hash = self.hash_block() 
             
 
-        debug_log("Previous hash while initializing Block: ", self.prev_hash)
+        # debug_log("Previous hash while initializing Block: ", self.prev_hash)
 
     def __str__(self):
         return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
@@ -239,11 +239,11 @@ class Blockchain:
             return True
         else:
             debug_log(f"Blockchain is either empty or failed to load from {self.file_path}")
-            for i in range(3):
-                for j in range(0, 7):
-                    print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
-                    time.sleep(0.25)
-                debug_log(" "*60, end="\r")
+            # for i in range(3):
+            #     for j in range(0, 7):
+            #         print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
+            #         time.sleep(0.25)
+            #     debug_log(" "*60, end="\r")
             print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
             debug_log("Genesis block created!")
@@ -276,7 +276,7 @@ class Blockchain:
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
-        self.update_prev_hash()
+        # self.update_prev_hash()
         iteration = 0
         while self.valid_proof(block, block.nonce)[0] is False:
             iteration += 1
@@ -285,8 +285,8 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        if self.update_prev_hash():
-            debug_log(f"prev_hash of {block} updated in valid_proof!")
+        # if self.update_prev_hash():
+        #     debug_log(f"prev_hash of {block} updated in valid_proof!")
         
         if block.prev_hash =="" or None and block.data.sender.name != "Genesis": # because genesis block has no previous hash
             raise IncompleteBlockException("Previous hash is empty while verifying in node.proof_of_work!\n",
@@ -356,7 +356,8 @@ class Blockchain:
             if not self.verify_PoW_singlePass(block):
                 m = False
                 raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!\n",
-                                                 f"{self.chain[i].hash} != {block.hash_block()}")
+                                                 f"Block: {block}, Previous hash: SHA256({block.prev_hash} x {block.nonce}) != {block.hash_block()}\n",
+                                                 f"SHA256({block.hash} x {block.prev_hash} x {block.nonce}) = ({hashlib.sha256(f'{block.hash}{block.prev_hash}{block.nonce})'.encode()).hexdigest()} != {block.hash}")
             else:
                 # debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
                 debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
