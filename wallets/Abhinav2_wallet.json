@@ -1,6 +1,14 @@
 {
     "bc_name": "xc_Abhinav2",
     "name": "Abhinav2",
-    "net_amount": 10,
-    "history": []
+    "net_amount": 0.0,
+    "history": [
+        {
+            "timestamp": "25/05/2024 01:01:36",
+            "amount": 0.0,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav2",
+            "message": "Reward for hash: d2431295e176c803eb57c0743dbe08d595b8972ccdcf7d3f51e5a87d2a367694"
+        }
+    ]
 }

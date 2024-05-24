@@ -273,6 +273,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
         debug_log(colored(data, 'green'))
         data["bc_name"] = client_user.blockchain.name
         received_blockchain = Blockchain(data["bc_name"])
+        debug_log(f"Received blockchain in process_sync_bc: {received_blockchain}")
         if load_blockchain_from_data(received_blockchain, data["data"]):
             if received_blockchain.verify_blockchain():
                 debug_log("Blockchain verification successful")
@@ -298,7 +299,9 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
             blockchain_json = json.load(f)
             blockchain = Blockchain(client_user.blockchain.name)
             blockchain.load_blockchain()
-            debug_log(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
+            # debug_log(f"Blockchain data loaded from file: blockchain = {blockchain}\n",
+            #           f"client_user.blockchain = {client_user.blockchain}")
+            # debug_log(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
             client.send(make_json(blockchain_json, action = "GIVE_BC", sender = client_user.username, reciever=reciever).encode())
             debug_log("Blockchain data sent to client: ")
             # debug_log(blockchain)

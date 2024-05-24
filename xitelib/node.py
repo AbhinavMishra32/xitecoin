@@ -208,26 +208,15 @@ class Blockchain:
             try:
                 self.chain = []
                 with open(self.file_path, 'r') as f:
-                        blockchain_data = json.load(f)
-                for block in blockchain_data:
+                    blockchain_data = json.load(f)
+                for index, block in enumerate(blockchain_data):
                     sender = User(block['data']['sender_name'], self)
                     recipient = User(block['data']['recipient_name'], self)
                     data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                     timestamp = block['timestamp']
-                    new_block = Block(data, block['nonce'],block['prev_hash'], block['hash'], timestamp)
-
-                    # for i in range(1, len(self.chain)):
-                    #     self.chain[i].prev_hash = self.chain[i-1].hash
-                    #     debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
-                    # if len(self.chain) > 1:
-                    #         new_block.prev_hash = self.chain[-1].hash
-                    if new_block.data.sender.name != "Genesis":
-                        new_block.hash = new_block.hash_block()
-                        debug_log("prev_hash added in load_blockchain: ", new_block.prev_hash)
-                    
-
+                    prev_hash = block['prev_hash'] if index > 0 else ""
+                    new_block = Block(data, block['nonce'], prev_hash, block['hash'], timestamp)
                     self.chain.append(new_block)
-                    # debug_log(f"LOADED BLOCK: {block}")
                 if len(self.chain) == 0:
                     return False
                 return True
@@ -239,17 +228,11 @@ class Blockchain:
             return True
         else:
             debug_log(f"Blockchain is either empty or failed to load from {self.file_path}")
-            # for i in range(3):
-            #     for j in range(0, 7):
-            #         print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
-            #         time.sleep(0.25)
-            #     debug_log(" "*60, end="\r")
             print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
             debug_log("Genesis block created!")
             self.save_blockchain()
             return False
-        
 
     def to_dict(self) ->list:
         return [block.to_dict() for block in self.chain]
