@@ -74,7 +74,7 @@ class Block:
             self.hash = self.hash_block() 
             
 
-        debug_log("Previous hash while initializing Block: ", self.prev_hash)
+        # debug_log("Previous hash while initializing Block: ", self.prev_hash)
 
     def __str__(self):
         return f"HASH: {self.hash} | PREV_HASH: {self.prev_hash} TIMESTAMP: {self.timestamp} DATA: {self.data}, NONCE: {self.nonce}"
@@ -85,13 +85,15 @@ class Block:
     def to_dict(self):
         return {
             'prev_hash': self.prev_hash,
-            'hash':self.hash if self.hash != "xite" else "",
+            'hash':self.hash,
             'data': self.data.transaction,
             'timestamp': self.timestamp,
             'nonce': self.nonce,
         }
 
     def hash_block(self) -> str:
+        if self.data.sender.name == "Genesis":
+            return "xite"
         if HASH_WITHOUT_TIMESTAMP:
             if self.prev_hash == "" and self.data.sender.name != "Genesis" and self.added_to_bc:
                 raise InvalidBlockchainException("Previous hash is empty while hashing!")
@@ -172,10 +174,11 @@ class Blockchain:
         return chain_data
     
     def update_prev_hash(self):
-        for block in self.chain:
-            block.prev_hash = self.chain[self.chain.index(block)-1].hash
-            debug_log(f"Previous hash updated to: {block.prev_hash}, for block: {block}")
-            return True
+        if len(self.chain) > 1:
+            for block in self.chain:
+                block.prev_hash = self.chain[self.chain.index(block)-1].hash
+                debug_log(f"Previous hash updated to: {block.prev_hash}, for block: {block}")
+                return True
 
     def verify_prev_hash(self) -> bool:
         for block in self.chain:
@@ -211,17 +214,17 @@ class Blockchain:
                     recipient = User(block['data']['recipient_name'], self)
                     data = Data(sender, recipient, block['data']['amount'], block['data']['message'])
                     timestamp = block['timestamp']
-                    # new_block = Block(block['prev_hash'], block['hash'], data, block['nonce'])
-                    new_block = Block(data, block['nonce'], timestamp = timestamp)
+                    new_block = Block(data, block['nonce'],block['prev_hash'], block['hash'], timestamp)
 
+                    # for i in range(1, len(self.chain)):
+                    #     self.chain[i].prev_hash = self.chain[i-1].hash
+                    #     debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
+                    # if len(self.chain) > 1:
+                    #         new_block.prev_hash = self.chain[-1].hash
                     if new_block.data.sender.name != "Genesis":
                         new_block.hash = new_block.hash_block()
                         debug_log("prev_hash added in load_blockchain: ", new_block.prev_hash)
                     
-                    if len(self.chain) > 0:
-                        if new_block.prev_hash != self.chain[-1].hash:
-                            new_block.prev_hash = self.chain[-1].hash
-                            debug_log(f"Previous hash of {new_block} updated in load_blockchain!")
 
                     self.chain.append(new_block)
                     # debug_log(f"LOADED BLOCK: {block}")
@@ -236,11 +239,11 @@ class Blockchain:
             return True
         else:
             debug_log(f"Blockchain is either empty or failed to load from {self.file_path}")
-            for i in range(3):
-                for j in range(0, 7):
-                    print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
-                    time.sleep(0.25)
-                debug_log(" "*60, end="\r")
+            # for i in range(3):
+            #     for j in range(0, 7):
+            #         print(f'Generating the "{self.name}" blockchain'+j*".", end="\r")
+            #         time.sleep(0.25)
+            #     debug_log(" "*60, end="\r")
             print(f'Generating the "{self.name}" blockchain...')
             self.create_genesis_block()
             debug_log("Genesis block created!")
@@ -252,6 +255,16 @@ class Blockchain:
         return [block.to_dict() for block in self.chain]
     
 
+    # def create_genesis_block(self): # function for creating hash of the genesis block instead of adding "xite" which can cause a lot of errors
+    #     prev_hash = ""
+    #     # first_hash = "xite"
+    #     # first_nonce = 32
+    #     data = Data(User("Genesis", self), User("Genesis", self), 0, "Genesis Block")
+    #     genesis_block = Block(data)
+    #     genesis_block.prev_hash = prev_hash
+    #     genesis_block.hash = genesis_block.hash_block()
+    #     genesis_block.nonce = self.proof_of_work(genesis_block)
+    #     self.chain.append(genesis_block)
     def create_genesis_block(self):
         first_prev_hash = ""
         first_hash = "xite"
@@ -263,7 +276,7 @@ class Blockchain:
         self.chain.append(genesis_block)
 
     def proof_of_work(self, block) -> int:
-        self.update_prev_hash()
+        # self.update_prev_hash()
         iteration = 0
         while self.valid_proof(block, block.nonce)[0] is False:
             iteration += 1
@@ -272,8 +285,12 @@ class Blockchain:
         return block.nonce
 
     def valid_proof(self, block: "Block", nonce: int) -> list:
-        if self.update_prev_hash():
-            debug_log(f"prev_hash of {block} updated in valid_proof!")
+        # if self.update_prev_hash():
+        #     debug_log(f"prev_hash of {block} updated in valid_proof!")
+        
+        if block.prev_hash =="" or None and block.data.sender.name != "Genesis": # because genesis block has no previous hash
+            raise IncompleteBlockException("Previous hash is empty while verifying in node.proof_of_work!\n",
+                                           f"Block: {block}, Previous hash: SHA256({block.prev_hash} x {block.nonce}) != {block.hash_block()}")
 
         guess = f"{block.hash}{block.prev_hash}{nonce}".encode() #old
         # guess = f"{block.hash}{nonce}".encode()
@@ -314,12 +331,12 @@ class Blockchain:
 
     def verify_PoW_singlePass(self, block: Block) -> bool:
         # hash = block.hash_block()
-        # guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
+        guess = f"{block.hash}{block.prev_hash}{block.nonce}".encode()
         if block.hash == "xite":
             return True
 
         debug_log("Previous hash in verify_PoW_singlePass: ", block.prev_hash)
-        guess = f"{block.hash}{block.nonce}".encode()
+        # guess = f"{block.hash}{block.nonce}".encode()
         # guess = f"{block.merkel_root}{block.nonce}".encode()
         guess_hash = hashlib.sha256(guess).hexdigest()
 
@@ -338,7 +355,9 @@ class Blockchain:
                 return False
             if not self.verify_PoW_singlePass(block):
                 m = False
-                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!")
+                raise InvalidBlockchainException(f"Hash of block [{i} -- HASH : {self.chain[i].hash}] does not match!\n",
+                                                 f"Block: {block}, Previous hash: SHA256({block.prev_hash} x {block.nonce}) != {block.hash_block()}\n",
+                                                 f"SHA256({block.hash} x {block.prev_hash} x {block.nonce}) = ({hashlib.sha256(f'{block.hash}{block.prev_hash}{block.nonce})'.encode()).hexdigest()} != {block.hash}")
             else:
                 # debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
                 debug_log(f"BLOCK [{i} ; HASH : {block.hash}] VERIFIED!")
@@ -587,6 +606,9 @@ class InvalidTransactionException(Exception):
     pass
 
 class InvalidBlockchainException(Exception):
+    pass
+
+class IncompleteBlockException(Exception):
     pass
 
 

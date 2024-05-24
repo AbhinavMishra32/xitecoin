@@ -1,6 +1,59 @@
 {
     "bc_name": "xc_Abhinav1",
     "name": "Abhinav1",
-    "net_amount": 10,
-    "history": []
+    "net_amount": 0.0,
+    "history": [
+        {
+            "timestamp": "24/05/2024 23:45:17",
+            "amount": 0,
+            "sender": "Abhinav1",
+            "recipient": "x"
+        },
+        {
+            "timestamp": "24/05/2024 23:45:17",
+            "amount": 0.0,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav1",
+            "message": "Reward for hash: 9b131c14c8c39bceb4f1d67fe20e47a81e9ae6770c95ca8c68889206d618c12b"
+        },
+        {
+            "timestamp": "24/05/2024 23:45:43",
+            "amount": 0,
+            "sender": "Abhinav1",
+            "recipient": "n"
+        },
+        {
+            "timestamp": "24/05/2024 23:45:43",
+            "amount": 0.0,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav1",
+            "message": "Reward for hash: 0fd82ec8a90a5cb02d4f36caab23e34b967c6fe437de2069aa23a709395f8079"
+        },
+        {
+            "timestamp": "24/05/2024 23:48:36",
+            "amount": 0,
+            "sender": "Abhinav1",
+            "recipient": "f"
+        },
+        {
+            "timestamp": "24/05/2024 23:48:36",
+            "amount": 0.0,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav1",
+            "message": "Reward for hash: 80734fda752915b7e1398d033c331272c81f6d95efa523c5e5e0a86e3bde0eb5"
+        },
+        {
+            "timestamp": "24/05/2024 23:49:03",
+            "amount": 0,
+            "sender": "Abhinav1",
+            "recipient": "u"
+        },
+        {
+            "timestamp": "24/05/2024 23:49:03",
+            "amount": 0.0,
+            "sender": "XiteNetwork",
+            "recipient": "Abhinav1",
+            "message": "Reward for hash: 4b9c7092191eadd8f543145acad0d4245f9df1774db317e2356ac1118187359c"
+        }
+    ]
 }
