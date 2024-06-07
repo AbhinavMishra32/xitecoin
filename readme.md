@@ -6,7 +6,7 @@ Every client connects to the Xite server which broadcasts each new connecting us
 
 - Xitecoin works uniquely -- as in it uses a bootstrap server instead of a p2p solution. The Xitecoin blockchain uses PoW to acquire the largest blockchain, the Xite Server forwards each user making a transaction about the info of the longest blockchain before the transaction occurs, this way everyone should have a single global blockchain.
 
-- The bootstrap server architecture is also a safety precausion so that client-client connection doesnt get hijacked and cause safety issues.
+- The bootstrap server architecture is also a safety precaution so that client-client connection doesnt get hijacked and cause safety issues.
 
 - Every transaction / blockchain-sync 'ACTION' is broadcasted to everyone and only those clients will accept the action that require it.
 
