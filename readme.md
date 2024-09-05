@@ -1,4 +1,4 @@
-# XiteCoin
+# XITECOIN (Technical Demo)
 
 XiteCoin is a unique blockchain-based cryptocurrency that uses a bootstrap server architecture instead of the traditional peer-to-peer (P2P) approach. This README provides an overview of how XiteCoin works, its protocol, and how you can get started with the project.
 
@@ -52,6 +52,23 @@ Pressing the corresponding number will allow you to perform actions related to p
 The Xite server can be started locally for a sandbox-like experience.
 
 ```python3 -m xite_network.xiteserver```
+
+<img width="301" alt="Screenshot 2024-09-05 at 11 19 41 PM" src="https://github.com/user-attachments/assets/26a806f9-77fd-48eb-b3e5-a3a256ae11e0">
+
+
+The console will dump logs onto the main menu terminal, this can be changed by changing the $ENV to `prod` or `dev`.
+
+Dont be discouraged if you see a ton of errors while sending transactions, its just the logs, the xiteclient engine tries to fix the bugs automatically.
+<img width="927" alt="Screenshot 2024-09-05 at 11 30 55 PM" src="https://github.com/user-attachments/assets/0cb70c64-0c44-4106-8818-98923ac98ebe">
+
+The blockchain is in json format, could be further converted to a binary file.
+
+<img width="276" alt="Screenshot 2024-09-05 at 11 35 32 PM" src="https://github.com/user-attachments/assets/532dc89f-34fc-43cd-9cdc-56a48889570f">
+
+
+This is how the synced blockchain looks, all having the same length and same transaction.
+<img width="1058" alt="Screenshot 2024-09-05 at 11 40 29 PM" src="https://github.com/user-attachments/assets/915b939c-5657-4f24-b62c-48a53769c691">
+
 
 ### Contributing
 Contributions to XiteCoin are welcome! Please fork the repository and submit a pull request.
