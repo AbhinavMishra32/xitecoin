@@ -2,5 +2,10 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
+*.pyc
+
 
 venv
+client.log
+LocalBlockchain/
+xite_env

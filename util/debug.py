@@ -5,8 +5,9 @@ import re
 from datetime import datetime
 import threading
 
-LOG_FILE = "client.log"  # Specify the name of the log file
-print_lock = threading.Lock()  # Define a lock for safe printing
+ENV = os.environ.get("ENV", "prod")
+LOG_FILE = "client.log"
+print_lock = threading.Lock()
 
 def strip_color(text):
     # Regular expression to remove ANSI escape codes for color formatting
