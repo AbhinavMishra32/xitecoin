@@ -19,12 +19,15 @@ from pydantic import BaseModel
 from typing import List
 import uvicorn
 
+SERVER_URL = "localhost"
+SERVER_PORT = 50000
+
 app = FastAPI()
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # client.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 try:
-    client.connect(("localhost", 50000))
+    client.connect((SERVER_URL, SERVER_PORT))
 except ConnectionRefusedError as e:
     debug_log(colored(f"Server currently offline. Please try again later", 'red'), env="dev")
     sys.exit(1)
@@ -264,6 +267,11 @@ def make_json(data, sender: str = "Default sender", action: str = "Default actio
     return json.dumps(json_data)
         
 def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False, send = False, process = False):
+    if(reciever == client_user.username):
+        print("Longest chain is being sent to the same client, ignoring...")
+        client_user.blockchain.load_blockchain()
+        client_user.blockchain.save_blockchain()
+        return
     # debug_log("INSIDE SYNC_BC FUNCTION")
     #process is false when we are just broadcasting that we want the blockchain
     #process is true when we get the blockchain data also and now we will process it
@@ -284,7 +292,7 @@ def process_sync_bc(client, data: dict, reciever = "Non Specific", recv = False,
                 if len(received_blockchain.chain) > len(client_user.blockchain.chain):
                     debug_log("Blockchain updated with longer chain from server")
                     client_user.blockchain = received_blockchain
-                    debug_log("now printing the loaded blockchain:")
+                    debug_log("Now printing the loaded blockchain:")
                     client_user.blockchain.load_blockchain()
                     client_user.blockchain.save_blockchain()
                     debug_log(client_user.blockchain)
@@ -409,7 +417,7 @@ def console_cli(client_user: XiteUser):
         choice = input("Enter choice: ")
         if choice == '1':
             print("Checking balance...")
-            # client_user.check_balance()
+            print("User balance: ", client_user.wallet["net_amount"])
         elif choice == '2':
             print("Checking blockchain length...")
             print("Length: ", len(client_user.blockchain))
@@ -445,9 +453,22 @@ def xc_transaction(recipient: str, amount: int, bc: Blockchain) -> bool:
             return True
         else:
             debug_log("Error occurred while verifying blockchain")
+            print("Syncing blockchain...")
             sync_bc()
             raise Exception("Blockchain verification failed\n",
                             f"Blockchain: {bc}")
+    # except BrokenPipeError as e:
+    #     debug_log(colored(f"Broken pipe error: {e}", 'red'))
+    #     debug_log("Attempting to reconnect...")
+    #     try:
+    #         global client
+    #         client.close()
+    #         client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #         client.connect((SERVER_URL, SERVER_PORT))
+    #         debug_log(colored("Reconnected to server", 'green'))
+    #     except Exception as e:
+    #         debug_log(colored(f"Failed to reconnect: {e}", 'red'))
+    #         return False
     except Exception as e:
         debug_log(colored(f"Error occurred during transaction: {e}", 'red'))
         traceback.print_exc()
@@ -489,6 +510,7 @@ def load_multiple_json_objects(data):
         debug_log(f"JSONDecodeError: {e}")
 
 def recv_msg():
+    global client
     buffer = ""
     while True:
         try:
@@ -506,6 +528,17 @@ def recv_msg():
                 except ValueError:
                     # Not enough data to decode, wait for more
                     break
+        except ConnectionResetError as e:
+            debug_log(colored(f"Connection reset by peer: {e}", 'red'))
+            debug_log("Attempting to reconnect...")
+            try:
+                client.close()
+                client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client.connect((SERVER_URL, SERVER_PORT))
+                debug_log(colored("Reconnected to server", 'green'))
+            except Exception as e:
+                debug_log(colored(f"Failed to reconnect: {e}", 'red'))
+                break
         except Exception as e:
             debug_log(colored(f"Error occurred while receiving json [recv_msg]: {e}", 'red'))
             traceback.print_exc()
@@ -592,7 +625,7 @@ def get_balance():
 def main(client_user: XiteUser, client: socket.socket):
     client.send(json.dumps({"sender": str(client_user.username), "action": "SENDER_NAME", "chain_length" : len(xc)}).encode())
 
-    debug_log("Checking blockchain length before making logging in...")
+    debug_log("Checking local blockchain length before connecting to the blockchain...")
     check_bc_len(xc)
 
     debug_log("printing LONGEST_CHAIN_LENGTH :-")
@@ -605,7 +638,7 @@ def main(client_user: XiteUser, client: socket.socket):
     receive_thread = threading.Thread(target=recv_msg)
     receive_thread.start()
 
-    uvicorn.run(app, host="localhost", port=8000)
+    # uvicorn.run(app, host="localhost", port=8000)
 
 
 if __name__ == "__main__":

@@ -164,6 +164,14 @@ def handle_choice(client: socket.socket, data):
             debug_log("broadcasting the json, action: None")
             broadcast(json.dumps(data).encode())
     
+    except BrokenPipeError as e:
+        debug_log(colored(f"BrokenPipeError: {e}", 'red', attrs=['bold']))
+        if client in clients:
+            clients.remove(client)
+            nickname = nicknames.pop(client, None)
+            if nickname:
+                broadcast(f"{nickname} left the network".encode())
+                client.close()
     except Exception as e:
         debug_log(colored(f"Error occurred while handling action, so not broadcasting: {e}", 'red', attrs=['bold']))
         debug_log("Faulty action:" + colored(data, 'red'))
