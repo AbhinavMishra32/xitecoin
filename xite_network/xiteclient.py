@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from typing import List
 import uvicorn
 
+# SERVER_URL = "192.168.29.142"
 SERVER_URL = "localhost"
 SERVER_PORT = 50000
 
@@ -425,6 +426,9 @@ def console_cli(client_user: XiteUser):
             print("Making transaction...")
             recipient = input("Enter recipient: ")
             amount = int(input("Enter amount: "))
+            if (client_user.wallet["net_amount"] - amount) < 0:
+                print("Insufficient balance!")
+                continue
             if xc_transaction(recipient, amount, client_user.blockchain):
                 print("Transaction successful")
         elif choice == '4':
@@ -599,6 +603,9 @@ class Balance(BaseModel):
 @app.post("/tr/{username}/{amount}")
 def send_transaction(username: str, amount: int):
     try:
+        if (client_user.wallet["net_amount"] - amount) < 0:
+            print("Insufficient balance")
+            raise ValueError("Insufficient balance")
         xc_transaction(username, amount, client_user.blockchain)
         return Transaction(username=username, amount=amount, status="success")
     except Exception as e:

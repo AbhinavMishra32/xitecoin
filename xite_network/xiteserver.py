@@ -7,6 +7,7 @@ from util.debug import debug_log
 import sys
 
 
+# HOST = "0.0.0.0"
 HOST = "localhost"
 PORT = 50000
 
