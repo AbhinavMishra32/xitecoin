@@ -1,5 +1,7 @@
 # XITECOIN (Technical Demo)
 
+## Documentation: https://deepwiki.com/AbhinavMishra32/xitecoin
+
 XiteCoin is a unique blockchain-based cryptocurrency that uses a bootstrap server architecture instead of the traditional peer-to-peer (P2P) approach. This README provides an overview of how XiteCoin works, its protocol, and how you can get started with the project.
 
 ## How XiteCoin Works
