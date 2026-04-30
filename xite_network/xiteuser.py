@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from re import M
 from xitelib.node import Blockchain, Data, User, Block
 from settings.settings import Settings

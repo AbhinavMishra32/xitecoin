@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 # XiteCoin ($XC), 2024
 # Created by Abhinav Mishra
 
